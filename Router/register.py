@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
+from fastapi import Query
 
 router = APIRouter()
 
@@ -27,20 +28,18 @@ async def register(user_data: user_register):
     finally:
         db.commit()
     
-@router.post("/duplicate_id")
-async def duplicate_id(userid: userid):
+@router.get("/duplicate_id")
+async def duplicate_id(userid: str):
     try:
-        userid = userid.userid
         if user_service.find_user_by_userid(userid) == None:
             return JSONResponse(status_code=200, content={"message": "User not found"})
         return JSONResponse(status_code=302, content={"message": "User already exists"})
     except:
         return JSONResponse(status_code=409, content={"message": "There was some error while checking the user"})
     
-@router.post("/duplicate_email")
-async def duplicate_email(email: email):
+@router.get("/duplicate_email")
+async def duplicate_email(email: str):
     try:
-        email = email.email
         found_user = user_service.find_user_by_email(email)
         if found_user == None:
             return JSONResponse(status_code=200, content={"message": "User not found"})
