@@ -7,13 +7,14 @@ from fastapi import FastAPI
 from starlette.status import *
 import uvicorn
 from Database.database import create_database
-from Router import register, login
+from Router import register, login, main_page
 
 create_database()
 app = FastAPI()
 
 app.include_router(register.router)
 app.include_router(login.router)
+app.include_router(main_page.router)
 
 
 # CORS
@@ -27,11 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-    
-@app.get("/")
-async def read_root():
-    return {"message": "Hello, World!"}
-
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True)
