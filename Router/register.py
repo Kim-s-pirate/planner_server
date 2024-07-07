@@ -6,7 +6,8 @@ from fastapi import APIRouter
 from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
-from fastapi import Query
+from fastapi import Query, Request
+from Service.authorization_service import *
 
 router = APIRouter()
 
@@ -46,6 +47,24 @@ async def duplicate_email(email: str):
         return JSONResponse(status_code=302, content={"message": "User already exists"})
     except:
         return JSONResponse(status_code=409, content={"message": "There was some error while checking the user"})
+
+@router.post("/user_delete/{userid}")
+async def user_delete(request: Request, userid: str):
+    try:
+        token = get_token(request)
+        if token == False:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+        verify = verify_token(token)
+        if verify == False:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        token = decode_token(token)
+        if token["email"] != user_service.find_user_by_userid(userid).email:
+            return JSONResponse(status_code=401, content={"message": "You are not authorized to delete this user"})
+        user_service.delete_user(userid)
+        return JSONResponse(status_code=200, content={"message": "User deleted successfully"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error while deleting the user"})
 
 #임시 테스트용 엔드포인트 rollback 테스트
 @router.get("/test")
