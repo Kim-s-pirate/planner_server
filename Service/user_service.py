@@ -26,4 +26,8 @@ class user_service:
         return db.query(user).filter(user.userid == userid).first()
     
     def create_user(user: user):
-            db.add(user)
+        db.add(user)
+
+    def delete_user(userid: str):
+        db.query(user).filter(user.userid == userid).delete()
+        db.commit()

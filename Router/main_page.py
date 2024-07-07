@@ -15,10 +15,10 @@ async def main(request: Request):
     try:
         token = get_token(request)
         if token == False:
-            return JSONResponse(status_code=401, content={"message": "Token not found"})
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
         verify = verify_token(token)
         if verify == False:
-            return JSONResponse(status_code=401, content={"message": "Token verification failed"})
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
         data = verify
         return JSONResponse(status_code=200, content={"data":verify, "message": "Nice to meet you!"})
     except Exception as e:
