@@ -5,13 +5,16 @@ import os
 from dotenv import load_dotenv
 from Service.authorization_service import *
 from datetime import datetime, timezone, timedelta
+from Service.user_service import *
 
 load_dotenv("../.env")
 secret = os.getenv("secret")
 
 def generate_token(email: str):
+    userid = user_service.find_user_by_email(email).userid
+    print(userid)
     payload = {
-        "email": email,
+        "userid": userid,
         "exp": datetime.now(timezone.utc) + timedelta(hours=2)  # 1시간 후 만료
         }
     token = jwt.encode(payload, secret, algorithm="HS256")
@@ -39,8 +42,9 @@ def verify_token(token):
         if decoded_token["exp"] < datetime.now(timezone.utc).timestamp():
             print("Token expired")
             return False
-        else:
-            return True  # 토큰이 유효한 경우 디코드된 토큰을 반환합니다.
+        if user_service.find_user_by_userid(decoded_token["userid"]).userid == None:
+            print("User not found")
+            return False
     except InvalidTokenError:
         print("Invalid token")
         return False

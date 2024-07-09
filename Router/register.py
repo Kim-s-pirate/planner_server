@@ -58,7 +58,7 @@ async def user_delete(request: Request, userid: str):
         if verify == False:
             return JSONResponse(status_code=400, content={"message": "Token verification failed"})
         token = decode_token(token)
-        if token["email"] != user_service.find_user_by_userid(userid).email:
+        if token["userid"] != userid:
             return JSONResponse(status_code=401, content={"message": "You are not authorized to delete this user"})
         user_service.delete_user(userid)
         return JSONResponse(status_code=200, content={"message": "User deleted successfully"})
