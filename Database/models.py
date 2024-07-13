@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Column, Integer, String, Time
+from sqlalchemy import ForeignKey, Column, Integer, String, Time, Boolean
 from sqlalchemy.sql.functions import current_time
 from sqlalchemy.orm import relationship
 from Database.database import Base, db, engine
@@ -11,6 +11,7 @@ class user(Base):
     email = Column(String(100), index=True, unique=True, nullable=False)
     password = Column(String(100), nullable=False)
     books = relationship("book", back_populates="user", cascade="all, delete")
+    subjects = relationship("subject", back_populates="user", cascade="all, delete")
 
 class log(Base):
     __tablename__ = "logs"
@@ -27,4 +28,14 @@ class book(Base):
     start_page = Column(Integer, nullable=False)
     end_page = Column(Integer, nullable=False)
     memo = Column(String(150), nullable=True)
+    status = Column(Boolean, default=True, nullable=False)
+    subject = Column(String(50), ForeignKey('subjects.subject', ondelete="CASCADE"), nullable=True)
     user = relationship("user", back_populates="books")
+    subject_relation = relationship("subject", back_populates="books")
+
+class subject(Base):
+    __tablename__ = "subjects"
+    subject = Column(String(50), primary_key=True, index=True, unique=True, nullable=False)
+    userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE"), nullable=False)
+    user = relationship("user", back_populates="subjects")
+    books = relationship("book", back_populates="subject_relation")

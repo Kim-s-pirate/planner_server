@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from starlette.status import *
 import uvicorn
 from Database.database import create_database
-from Router import register, login, main_page, book
+from Router import register, login, main_page, book, subject
 create_database()
 app = FastAPI()
 
@@ -15,6 +15,7 @@ app.include_router(register.router)
 app.include_router(login.router)
 app.include_router(main_page.router)
 app.include_router(book.router)
+app.include_router(subject.router)
 
 
 # CORS

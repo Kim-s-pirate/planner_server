@@ -48,7 +48,7 @@ async def duplicate_email(email: str):
     except:
         return JSONResponse(status_code=409, content={"message": "There was some error while checking the user"})
 
-@router.post("/user_delete/{userid}")
+@router.delete("/user_delete/{userid}")
 async def user_delete(request: Request, userid: str):
     try:
         token = get_token(request)

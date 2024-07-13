@@ -4,23 +4,27 @@ from Database.database import db
 
 class book_service:
     def to_book_db(book_register: book_register, userid: str):
-        book_db = book()
-        book_db.title = book_register.title
-        book_db.userid = userid
-        book_db.start_page = book_register.start_page
-        book_db.end_page = book_register.end_page
-        book_db.memo = book_register.memo
-        return book_db
+        return book(
+            userid=userid,
+            title=book_register.title,
+            start_page=book_register.start_page,
+            end_page=book_register.end_page,
+            memo=book_register.memo,
+            **({"status": book_register.status} if book_register.status is not None else True),
+            **({"subject": book_register.subject} if book_register.subject is not None else {})
+        )
 
     def to_book_data(book_entity: book):
-        book_data = book_data()
-        book_data.id = book_entity.id
-        book_data.userid = book_entity.userid
-        book_data.title = book_entity.title
-        book_data.start_page = book_entity.start_page
-        book_data.end_page = book_entity.end_page
-        book_data.memo = book_entity.memo
-        return book_data
+        return book_data(
+            id=book_entity.id,
+            userid=book_entity.userid,
+            title=book_entity.title,
+            start_page=book_entity.start_page,
+            end_page=book_entity.end_page,
+            memo=book_entity.memo,
+            status=book_entity.status,
+            subject=book_entity.subject
+        )
 
     def find_book_by_title(title: str):
         return db.query(book).filter(book.title == title).first()
