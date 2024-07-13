@@ -15,7 +15,7 @@ load_dotenv("../.env")
 secret = os.getenv("secret")
 
 @router.post("/book_register")
-def book_register(request: Request, book_data: book_register):
+async def book_register(request: Request, book_data: book_register):
     try:
         token = get_token(request)
         if token == False:
@@ -33,3 +33,99 @@ def book_register(request: Request, book_data: book_register):
         return JSONResponse(status_code=409, content={"message": "Book registration failed"})
     finally:
         db.commit()
+
+@router.get("/book/{bookid}")
+async def book_info(request: Request, bookid: str):
+    try:
+        token = get_token(request)
+        if token == False:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+        verify = verify_token(token)
+        if verify == False:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        token = decode_token(token)
+        if book_service.find_book_by_id(bookid).userid != token["userid"]:
+            return JSONResponse(status_code=401, content={"message": "You are not authorized to view this book"})
+        book = book_service.find_book_by_id(bookid)
+        if book == None:
+            return JSONResponse(status_code=200, content={"message": "Book not found"})
+        return JSONResponse(status_code=200, content={"book":book_service.to_book_data(book).__dict__})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error while checking the book"})
+    
+@router.get("/book_list")
+async def book_list(request: Request):
+    try:
+        token = get_token(request)
+        if token == False:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+        verify = verify_token(token)
+        if verify == False:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        token = decode_token(token)
+        books = db.query(book).filter(book.userid == token["userid"]).all()
+        book_list = []
+        for book_entity in books:
+            book_list.append(book_service.to_book_data(book_entity).__dict__)
+        return JSONResponse(status_code=200, content={"books": book_list})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error while checking the book list"})
+    
+@router.delete("/book_delete/{bookid}")
+async def book_delete(request: Request, bookid: str):
+    try:
+        token = get_token(request)
+        if token == False:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+        verify = verify_token(token)
+        if verify == False:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        token = decode_token(token)
+        if book_service.find_book_by_id(bookid).userid != token["userid"]:
+            return JSONResponse(status_code=401, content={"message": "You are not authorized to delete this book"})
+        book_service.delete_book(bookid)
+        return JSONResponse(status_code=200, content={"message": "Book deleted successfully"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error while deleting the book"})
+
+@router.get("/active_book_list")
+async def active_book_list(request: Request):
+    try:
+        token = get_token(request)
+        if token == False:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+        verify = verify_token(token)
+        if verify == False:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        token = decode_token(token)
+        books = db.query(book).filter(book.userid == token["userid"], book.status == True).all()
+        book_list = []
+        for book_entity in books:
+            book_list.append(book_service.to_book_data(book_entity).__dict__)
+        return JSONResponse(status_code=200, content={"books": book_list})
+    except Exception as e:
+        raise e
+        return JSONResponse(status_code=409, content={"message": "There was some error while checking the book list"})
+    
+@router.get("/inactive_book_list")
+async def inactive_book_list(request: Request):
+    try:
+        token = get_token(request)
+        if token == False:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+        verify = verify_token(token)
+        if verify == False:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        token = decode_token(token)
+        books = db.query(book).filter(book.userid == token["userid"], book.status == False).all()
+        book_list = []
+        for book_entity in books:
+            book_list.append(book_service.to_book_data(book_entity).__dict__)
+        return JSONResponse(status_code=200, content={"books": book_list})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error while checking the book list"})
+    
