@@ -1,7 +1,7 @@
 from sqlalchemy import extract
 from Database.models import *
 from Data.schedule import *
-from Data.calender import *
+from Data.calendar import *
 from Database.database import db
 
 class calendar_service:
@@ -44,10 +44,16 @@ class calendar_service:
             schedule.userid == userid
         ).all()
     
-    def to_goal_db(goal_data: week_goal_register, userid: str):
+    def to_calendar_goal_db(goal_data: calendar_goal_register, userid: str):
         return goal(
             userid=userid,
             week=goal_data.week,
             goal=goal_data.goal
         )
     
+    def to_calendar_goal_data(goal_entity: calendar_goal):
+        return calendar_goal(
+            userid=goal_entity.userid,
+            week=goal_entity.week,
+            goal=goal_entity.goal
+        )

@@ -15,3 +15,7 @@ class email(BaseModel):
 
 class userid(BaseModel):
     userid: str
+
+class user_edit(BaseModel):
+    userid: str
+    username: str

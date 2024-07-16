@@ -51,17 +51,15 @@ async def duplicate_email(email: str):
 @router.delete("/user_delete/{userid}")
 async def user_delete(request: Request, userid: str):
     try:
-        token = get_token(request)
-        if token == False:
-            return JSONResponse(status_code=400, content={"message": "Token not found"})
-        verify = verify_token(token)
-        if verify == False:
-            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
-        token = decode_token(token)
+        token = authenticate_user(request)
         if token["userid"] != userid:
             return JSONResponse(status_code=401, content={"message": "You are not authorized to delete this user"})
         user_service.delete_user(userid)
         return JSONResponse(status_code=200, content={"message": "User deleted successfully"})
+    except TokenNotFoundError as e:
+        return JSONResponse(status_code=400, content={"message": "Token not found"})
+    except TokenVerificationError as e:
+        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=409, content={"message": "There was some error while deleting the user"})
@@ -80,3 +78,27 @@ async def test_rollback():
     except:
         return JSONResponse(status_code=409, content={"message": "There was some error while rolling back the user"})
     
+
+@router.post("/edit_user/{current_userid}")
+async def edit_user(request: Request, user_data: user_edit, current_userid: str):
+    try:
+        token = authenticate_user(request)
+        print(token)
+        if token["userid"] != current_userid:
+            return JSONResponse(status_code=401, content={"message": "You are not authorized to edit this user"})
+        found_user = user_service.find_user_by_userid(current_userid)
+        if found_user == None:
+            return JSONResponse(status_code=404, content={"message": "User not found"})
+        user_service.edit_user(user_data, current_userid)
+        modified_token = modify_token(found_user.email, token)
+
+        return JSONResponse(status_code=200, content={"token": modified_token, "message": "User edited successfully"})
+    except TokenNotFoundError as e:
+        return JSONResponse(status_code=400, content={"message": "Token not found"})
+    except TokenVerificationError as e:
+        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(status_code=409, content={"message": "There was some error while editing the user"})
+    finally:
+        db.commit()

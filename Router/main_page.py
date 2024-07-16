@@ -13,6 +13,10 @@ router = APIRouter()
 @router.get("/")
 async def main(request: Request):
     try:
+        return JSONResponse(status_code=200, content={"message": {
+            "userid": "userid_placeholder",  # userid를 적절히 설정해야 함
+            "exp": (datetime.now(timezone.utc) + timedelta(hours=1000000)).isoformat()  # ISO 포맷으로 변환
+        }})
         token = get_token(request)
         if token == False:
             return JSONResponse(status_code=400, content={"message": "Token not found"})
@@ -20,7 +24,7 @@ async def main(request: Request):
         if verify == False:
             return JSONResponse(status_code=400, content={"message": "Token verification failed"})
         data = verify
-        return JSONResponse(status_code=200, content={"data":verify, "message": "Nice to meet you!"})
+        
     except Exception as e:
         print(e)
         return JSONResponse(status_code=409, content={"message": "There was some error"})
