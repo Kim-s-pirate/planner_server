@@ -18,3 +18,11 @@ class book_data(BaseModel):
     memo: str
     status: bool
     subject: Optional[str] = None
+
+class book_edit(BaseModel):
+    title: str
+    start_page: int
+    end_page: int
+    memo: str
+    status: bool
+    subject: Optional[str] = None

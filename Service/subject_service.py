@@ -2,6 +2,11 @@ from Data.subject import *
 from Database.models import *
 from Database.database import db
 
+class SubjectNotFoundError(Exception):
+    def __init__(self, message="Subject not found."):
+        self.message = message
+        super().__init__(self.message)
+
 class subject_service:
     def to_subject_db(subject_register: subject_register, userid: str):
         return subject(
@@ -11,19 +16,26 @@ class subject_service:
     
     def to_subject_data(subject_entity: subject):
         return subject_data(
+            id=subject_entity.id,
             userid=subject_entity.userid,
             subject=subject_entity.subject,
         )
 
-    def find_subject_by_title(title: str):
-        return db.query(book).filter(book.title == title).first()
+    def find_subject_by_name(name: str, userid: str):
+        return db.query(subject).filter(subject.subject == name, subject.userid == userid).first()
 
-    def find_subject_by_id(id: int):
-        return db.query(book).filter(book.id == id).first()
-
-    def create_subject(subject: book):
+    def create_subject(subject: subject):
         db.add(subject)
 
-    def delete_subject(id: int):
-        db.query(book).filter(book.id == id).delete()
+    def delete_subject(name: str):
+        db.query(subject).filter(subject.subject == name).delete()
         db.commit()
+
+    def edit_subject_name(name: str, new_name: str):
+        try:
+            found_subject = subject_service.find_subject_by_name(name)
+            if found_subject == None:
+                raise SubjectNotFoundError
+            found_subject.subject = new_name
+        except Exception as e:
+            raise e

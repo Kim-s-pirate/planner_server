@@ -7,16 +7,40 @@ from Service.authorization_service import *
 from datetime import datetime, timezone, timedelta
 from Service.user_service import *
 
+class TokenNotFoundError(Exception):
+    def __init__(self):
+        self.message = "Token not found"
+        super().__init__(self.message)
+
+class TokenVerificationError(Exception):
+    def __init__(self):
+        self.message = "Token verification failed"
+        super().__init__(self.message)
+
 load_dotenv("../.env")
 secret = os.getenv("secret")
 
 def generate_token(email: str):
     userid = user_service.find_user_by_email(email).userid
-    print(userid)
     payload = {
         "userid": userid,
         "exp": datetime.now(timezone.utc) + timedelta(hours=2)  # 1시간 후 만료
         }
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    return token
+
+def super_token(email: str):
+    userid = user_service.find_user_by_email(email).userid
+    payload = {
+        "userid": userid,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=2)  # 2시간 후 만료
+        }
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    return token
+
+def modify_token(email: str, payload: dict):
+    userid = user_service.find_user_by_email(email).userid
+    payload["userid"] = userid
     token = jwt.encode(payload, secret, algorithm="HS256")
     return token
 
@@ -35,7 +59,7 @@ def decode_token(token):
         return False
     except JWTError:
         return False
-    
+
 def verify_token(token):
     try:
         decoded_token = jwt.decode(token, secret, algorithms=["HS256"])
@@ -51,3 +75,15 @@ def verify_token(token):
     except JWTError:
         print("JWT Error")
         return False
+    
+def authenticate_user(request: Request):
+    try:
+        token = get_token(request)
+        if token == False:
+            raise TokenNotFoundError
+        verify = verify_token(token)
+        if verify == False:
+            raise TokenVerificationFailedError
+        return decode_token(token)
+    except Exception as e:
+        raise e
