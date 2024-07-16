@@ -83,7 +83,7 @@ def authenticate_user(request: Request):
             raise TokenNotFoundError
         verify = verify_token(token)
         if verify == False:
-            raise TokenVerificationFailedError
+            raise TokenVerificationError
         return decode_token(token)
     except Exception as e:
         raise e
