@@ -137,16 +137,3 @@ async def edit_book(request: Request, book_data: book_edit, title: str):
         return JSONResponse(status_code=409, content={"message": e.__str__()})
     finally:
         db.commit()
-
-#추후 각 요소에 대한 수정 엔드포인트 작성 예정
-# @router.get("/edit_book/subject/{title}/{new_subject}")
-# async def edit_book_subject(request: Request, title: str, new_subject: str):
-#     try:
-#         token = authenticate_user(request)
-#         book_service.edit_book_subject(title, new_subject, token["userid"])
-#         return JSONResponse(status_code=200, content={"message": "Book subject edited successfully"})
-#     except Exception as e:
-#         print(e)
-#         return JSONResponse(status_code=409, content={"message": e.__str__()})
-#     finally:
-#         db.commit()

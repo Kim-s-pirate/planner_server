@@ -31,7 +31,7 @@ class book(Base):
     end_page = Column(Integer, nullable=False)
     memo = Column(String(150), nullable=True)
     status = Column(Boolean, default=True, nullable=False)
-    subject = Column(String(50), ForeignKey('subjects.subject', ondelete="SET NULL"), nullable=True)
+    subject = Column(String(50), ForeignKey('subjects.subject', ondelete="SET NULL"), nullable=True)#on update 달기
     user = relationship("user", back_populates="books") 
     subject_relation = relationship("subject", back_populates="books")
     __table_args__ = (UniqueConstraint('userid', 'title', name='unique_userid_title'),)

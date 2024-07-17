@@ -46,14 +46,46 @@ class calendar_service:
     
     def to_calendar_goal_db(goal_data: calendar_goal_register, userid: str):
         return goal(
-            userid=userid,
-            week=goal_data.week,
-            goal=goal_data.goal
+            year=goal_data.year,
+            month=goal_data.month,
+            month_goal=goal_data.month_goal,
+            week_goal=goal_data.week_goal,
+            userid=userid
         )
     
     def to_calendar_goal_data(goal_entity: calendar_goal):
         return calendar_goal(
-            userid=goal_entity.userid,
-            week=goal_entity.week,
-            goal=goal_entity.goal
+            year=goal_entity.year,
+            month=goal_entity.month,
+            month_goal=goal_entity.month_goal,
+            week_goal=goal_entity.week_goal,
+            userid=goal_entity.userid
         )
+    
+    def find_goal(year: int, month: int, userid: str):
+        return db.query(goal).filter(
+            goal.year == year,
+            goal.month == month,
+            goal.userid == userid
+        ).first()
+    
+    def register_goal(goal_data: calendar_goal_register, userid: str):
+        try:
+            if (goal_entity := calendar_service.find_goal(goal_data.year, goal_data.month, userid)) != None:
+                goal_entity.month_goal = goal_data.month_goal
+                goal_entity.week_goal = goal_data.week_goal
+            else:
+                goal_entity = calendar_service.to_calendar_goal_db(goal_data, userid)
+                db.add(goal_entity)
+        except Exception as e:
+            raise e
+    
+    def delete_goal(year: int, month: int, userid: str):
+        try:
+            db.query(goal).filter(
+                goal.year == year,
+                goal.month == month,
+                goal.userid == userid
+            ).delete()
+        except Exception as e:
+            raise e
