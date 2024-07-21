@@ -9,7 +9,26 @@ from starlette.status import *
 from Service.authorization_service import *
 
 router = APIRouter()
-    
+
+@router.get("/")
+async def main(request: Request):
+    try:
+        token = get_token(request)
+        if not token:
+            return JSONResponse(status_code=400, content={"message": "Token not found"})
+
+        verify = verify_token(token)
+        if not verify:
+            return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+
+        data = verify
+        return JSONResponse(status_code=200, content={"data": data, "message": "Nice to meet you!"})
+
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error"})
+
+"""
 @router.get("/")
 async def main(request: Request):
     try:
@@ -28,6 +47,7 @@ async def main(request: Request):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=409, content={"message": "There was some error"})
+"""
     
 # @router.get("/")
 # async def main(request: Request):

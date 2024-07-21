@@ -69,6 +69,7 @@ def verify_token(token):
         if user_service.find_user_by_userid(decoded_token["userid"]).userid == None:
             print("User not found")
             return False
+        return True
     except InvalidTokenError:
         print("Invalid token")
         return False

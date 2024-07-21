@@ -27,6 +27,7 @@ async def login(user_data: user_login, request: Request):
             else:
                 pass #토큰은 있는데 유효하지 않은 경우
         #이미 토큰이 있는 경우에 대해서 더 처리가 필요함.
+
         found_user = user_service.find_user_by_email(user_data.email)
         if found_user == None:
             return JSONResponse(status_code=404, content={"message": "User not found"})

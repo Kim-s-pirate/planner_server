@@ -14,10 +14,10 @@ router = APIRouter()
 @router.post("/register")
 async def register(user_data: user_register):
     try:
-        if user_service.find_user_by_email(user_data.email) != None:
-            return JSONResponse(status_code=302, content={"message": "email"})
-        if user_service.find_user_by_userid(user_data.userid) != None:
-            return JSONResponse(status_code=302, content={"message": "userid"})
+        if user_service.find_user_by_email(user_data.email) != None: # 중복 이메일 존재 시
+            return JSONResponse(status_code=302, content={"message": "email duplicated"})
+        if user_service.find_user_by_userid(user_data.userid) != None: # 중복 userid 존재 시
+            return JSONResponse(status_code=302, content={"message": "userid duplicated"})
         user_data = user_service.to_user_db(user_data)
         user_service.create_user(user_data)
         print(f"User {user_data.userid} registered")
