@@ -22,13 +22,13 @@ async def subject_register(request: Request, subject_data: subject_register):
         subject_service.create_subject(subject_data)
         return JSONResponse(status_code=201, content={"message": "Subject registered successfully"})
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         db.rollback()
         print(e)
-        return JSONResponse(status_code=409, content={"message": "Subject registration failed"})
+        return JSONResponse(status_code=500, content={"message": "Subject registration failed"})
     finally:
         db.commit()
 
@@ -40,17 +40,17 @@ async def delete_subject(request: Request, subject: str):
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         if found_subject.userid != token["userid"]:
-            return JSONResponse(status_code=401, content={"message": "You are not authorized to delete this subject"})
+            return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
         subject_service.delete_subject(subject)
         return JSONResponse(status_code=200, content={"message": "Subject deleted successfully"})
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         db.rollback()
-        raise e
-        return JSONResponse(status_code=409, content={"message": "Subject deletion failed"})
+        print(e)
+        return JSONResponse(status_code=500, content={"message": "Subject deletion failed"})
     finally:
         db.commit()
 
@@ -64,12 +64,12 @@ async def get_subject(request: Request, subject: str):
         data = [book_service.to_book_data(book).dict() for book in found_book]
         return JSONResponse(status_code=200, content=data)
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
-        raise e
-        return JSONResponse(status_code=409, content={"message": "Subject retrieval failed"})
+        print(e)
+        return JSONResponse(status_code=500, content={"message": "Subject retrieval failed"})
     finally:
         db.commit()
 
@@ -82,10 +82,10 @@ async def edit_subject(request: Request, subject: str, new_subject: str):
     except SubjectNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": e.__str__()})
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
-        return JSONResponse(status_code=409, content={"message": "Subject edit failed"})
+        return JSONResponse(status_code=500, content={"message": "Subject edit failed"})
     finally:
         db.commit()

@@ -33,13 +33,13 @@ async def register_schedule(schedule_data: day_schedule_register, request: Reque
         return JSONResponse(status_code=200, content={"message": "Schedule registered successfully"})
     
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
         db.rollback()
-        return JSONResponse(status_code=409, content={"message": "There was some error while registering the schedule"})
+        return JSONResponse(status_code=500, content={"message": "There was some error while registering the schedule"})
     finally:
         db.commit()
 
@@ -54,13 +54,13 @@ async def get_schedule(request: Request, year: str = Query(None), month: str = Q
                 s['date'] = s['date'].isoformat()
         return JSONResponse(status_code=200, content={"schedule": schedule})
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
         db.rollback()
-        return JSONResponse(status_code=409, content={"message": "There was some error while getting the schedule"})
+        return JSONResponse(status_code=500, content={"message": "There was some error while getting the schedule"})
     finally:
         db.commit()
 
@@ -75,13 +75,13 @@ async def register_calendar_goal(goal_data: calendar_goal_register, request: Req
         db.commit()
         return JSONResponse(status_code=200, content={"message": "Goal registered successfully"})
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
         db.rollback()
-        return JSONResponse(status_code=409, content={"message": "There was some error while registering the goal"})
+        return JSONResponse(status_code=500, content={"message": "There was some error while registering the goal"})
     finally:
         db.commit()
 
@@ -93,13 +93,13 @@ async def delete_calendar_goal(year: int, month: int, request: Request):
         db.commit()
         return JSONResponse(status_code=200, content={"message": "Goal deleted successfully"})
     except TokenNotFoundError as e:
-        return JSONResponse(status_code=400, content={"message": "Token not found"})
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
     except TokenVerificationError as e:
-        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
         db.rollback()
-        return JSONResponse(status_code=409, content={"message": "There was some error while deleting the goal"})
+        return JSONResponse(status_code=500, content={"message": "There was some error while deleting the goal"})
     finally:
         db.commit()
 
