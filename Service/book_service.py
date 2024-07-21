@@ -37,6 +37,7 @@ class book_service:
 
     def to_book_data(book_entity: book):
         return book_data(
+            id = book_entity.id,
             userid=book_entity.userid,
             title=book_entity.title,
             start_page=book_entity.start_page,
