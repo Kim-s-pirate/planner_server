@@ -32,6 +32,8 @@ async def subject_register(request: Request, subject_data: subject_register):
     finally:
         db.commit()
 
+#duplicate_subject
+
 @router.delete("/delete_subject/{subject}")
 async def delete_subject(request: Request, subject: str):
     try:

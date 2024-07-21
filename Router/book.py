@@ -34,13 +34,15 @@ async def book_register(request: Request, book_data: book_register):
     finally:
         db.commit()
 
-@router.get("/book/{bookid}")
-async def book_info(request: Request, bookid: str):
+#duplicate_book
+
+@router.get("/book/{booktitle}")
+async def book_info(request: Request, booktitle: str):
     try:
         token = authenticate_user(request)
-        if book_service.find_book_by_id(bookid).userid != token["userid"]:
+        if book_service.find_book_by_title(booktitle, token["userid"]).userid != token["userid"]:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-        book = book_service.find_book_by_id(bookid)
+        book = book_service.find_book_by_title(booktitle, token["userid"])
         if book == None:
             return JSONResponse(status_code=404, content={"message": "Book not found"})
         return JSONResponse(status_code=200, content={"book":book_service.to_book_data(book).__dict__})
