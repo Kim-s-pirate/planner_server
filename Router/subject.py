@@ -33,12 +33,24 @@ async def subject_register(request: Request, subject_data: subject_register):
         db.commit()
 
 #duplicate_subject
+@router.get("/duplicate_subject")
+async def duplicate_subject(request: Request, subject: str):
+    try:
+        token = authenticate_user(request)
+        userid = token["userid"]
+        found_subject = subject_service.find_subject_by_name(subject, userid)
+        if found_subject == None:
+            return JSONResponse(status_code=404, content={"message": "Subject not found"})# modify?? : subject can be created
+        return JSONResponse(status_code=409, content={"message": f"Subject '{subject}' already exists"})
+    except:
+        return JSONResponse(status_code=500, content={"message": "There was some error while checking the subject"})
 
 @router.delete("/delete_subject/{subject}")
 async def delete_subject(request: Request, subject: str):
     try:
         token = authenticate_user(request)
-        found_subject = subject_service.find_subject_by_name(subject)
+        userid = token["userid"]
+        found_subject = subject_service.find_subject_by_name(subject, userid)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         if found_subject.userid != token["userid"]:
@@ -75,7 +87,7 @@ async def get_subject(request: Request, subject: str):
     finally:
         db.commit()
 
-@router.get("/edit_subject/{subject}")
+@router.post("/edit_subject/{subject}")
 async def edit_subject(request: Request, subject: str, new_subject: str):
     try:
         token = authenticate_user(request)
@@ -89,5 +101,24 @@ async def edit_subject(request: Request, subject: str, new_subject: str):
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "Subject edit failed"})
+    finally:
+        db.commit()
+
+@router.get("/subject_list")
+async def get_subject_list(request: Request):
+    try:
+        token = authenticate_user(request)
+        found_subject = subject_service.find_subject_by_userid(token["userid"])
+        if found_subject == None:
+            return JSONResponse(status_code=404, content={"message": "Subject not found"})
+        data = {"userid": token["userid"], "subjects": [subject_service.to_subject_data(subject).subject for subject in found_subject]}
+        return JSONResponse(status_code=200, content=data)
+    except TokenNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except TokenVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=500, content={"message": "Subject list retrieval failed"})
     finally:
         db.commit()

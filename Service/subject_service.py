@@ -39,3 +39,6 @@ class subject_service:
             found_subject.subject = new_name
         except Exception as e:
             raise e
+        
+    def find_subject_by_userid(userid: str):
+        return db.query(subject).filter(subject.userid == userid).all()
