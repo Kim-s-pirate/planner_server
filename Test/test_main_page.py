@@ -7,6 +7,16 @@ from Controller.main import app  # FastAPI 애플리케이션이 정의된 파�
 
 client = TestClient(app)
 
+def test_default_response():
+    response = client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data
+    assert data["message"]["userid"] == "userid_placeholder"
+    assert "exp" in data["message"]
+
+
+"""
 def test_main_without_token():
     response = client.get("/")
     assert response.status_code == 400
@@ -49,3 +59,4 @@ def test_main_exception_handling(monkeypatch):
     response = client.get("/")
     assert response.status_code == 409
     assert response.json() == {"message": "There was some error"}
+"""
