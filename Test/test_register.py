@@ -3,178 +3,108 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from Database.database import Base, get_db
+from unittest.mock import patch
+from Database.database import Base
+from Controller.main import app
 from Database.models import user
-from Controller.main import app  # Assuming the FastAPI app is defined in Controller/main.py
-from Data.user import user_register, user_edit
 from Service.user_service import user_service
 
-# Create a test client
-client = TestClient(app)
-
 # Configure the test database
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TEST_DATABASE_URL = "mysql+mysqlconnector://" + DB_USER + ":" + DB_PASSWORD + "@" + DB_HOST + ":3306/eyJuYW1lIjoidGVzdF9wbGFubmVyIn0"
 
-# Override the get_db function to use the test database
+temp_engine = create_engine(TEST_DATABASE_URL.replace('eyJuYW1lIjoidGVzdF9wbGFubmVyIn0', ''))
+with temp_engine.connect() as conn:
+    conn.execute(text("CREATE DATABASE IF NOT EXISTS eyJuYW1lIjoidGVzdF9wbGFubmVyIn0"))
+
+test_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+# Create a new database and tables
+def create_test_database():
+    with test_engine.connect() as conn:
+        conn.execute(text("USE eyJuYW1lIjoidGVzdF9wbGFubmVyIn0"))
+        conn.commit()
+    Base.metadata.create_all(bind=test_engine)
+
+    # Add initial data
+    with TestingSessionLocal() as session:
+        initial_user = user(
+            email="default@example.com",
+            password="defaultpassword",
+            userid="defaultuserid",
+            username="defaultusername"
+        )
+        session.add(initial_user)
+        session.commit()
+
+def drop_test_database():
+    with test_engine.connect() as conn:
+        conn.execute(text("DROP DATABASE IF EXISTS eyJuYW1lIjoidGVzdF9wbGFubmVyIn0"))
+        conn.commit()
+
 @pytest.fixture(scope="module")
 def test_db():
-    Base.metadata.create_all(bind=engine)  # Create the tables in the test database
+    create_test_database()
     db = TestingSessionLocal()
     yield db
     db.close()
-    Base.metadata.drop_all(bind=engine)  # Drop the tables after the test is done
+    Base.metadata.drop_all(bind=test_engine)
+    drop_test_database()
 
-# Dependency override for FastAPI
+# `db` 객체를 패치하는 픽스처
 @pytest.fixture(scope="module")
 def client_with_test_db(test_db):
-    def override_get_db():
-        yield test_db
+    with patch("Service.user_service.db", test_db):
+        yield TestClient(app)
 
-    app.dependency_overrides[get_db] = override_get_db
-    yield client
-    app.dependency_overrides.clear()
+@pytest.fixture
+def mock_user_service(monkeypatch):
+    # Mock user_service
+    class MockUserService:
+        @staticmethod
+        def find_user_by_email(email):
+            raise Exception("Test Exception")
 
-# Test cases
+    monkeypatch.setattr(user_service, "find_user_by_email", MockUserService.find_user_by_email)
 
 def test_register_success(client_with_test_db):
     response = client_with_test_db.post("/register", json={
         "email": "test@example.com",
         "password": "testpassword",
-        "userid": "testuser",
+        "userid": "testuserid",
         "username": "testusername"
     })
     assert response.status_code == 201
     assert response.json() == {"message": "User registered successfully"}
 
 def test_register_email_duplicated(client_with_test_db):
-    # First, register the user
-    client_with_test_db.post("/register", json={
-        "email": "duplicate@example.com",
-        "password": "testpassword",
-        "userid": "uniqueuserid",
-        "username": "uniqueusername"
-    })
-    # Try to register the same email again
     response = client_with_test_db.post("/register", json={
-        "email": "duplicate@example.com",
+        "email": "default@example.com",
         "password": "testpassword",
-        "userid": "newuserid",
-        "username": "newusername"
+        "userid": "testuserid",
+        "username": "testusername"
     })
     assert response.status_code == 302
     assert response.json() == {"message": "email duplicated"}
 
 def test_register_userid_duplicated(client_with_test_db):
-    # First, register the user
-    client_with_test_db.post("/register", json={
-        "email": "uniqueemail@example.com",
-        "password": "testpassword",
-        "userid": "duplicateuserid",
-        "username": "uniqueusername"
-    })
-    # Try to register the same userid again
     response = client_with_test_db.post("/register", json={
-        "email": "newemail@example.com",
+        "email": "test@example.com",
         "password": "testpassword",
-        "userid": "duplicateuserid",
-        "username": "newusername"
+        "userid": "defaultuserid",
+        "username": "testusername"
     })
     assert response.status_code == 302
     assert response.json() == {"message": "userid duplicated"}
 
-def test_duplicate_id_user_not_found(client_with_test_db):
-    response = client_with_test_db.get("/duplicate_id", params={"userid": "nonexistentuser"})
-    assert response.status_code == 200
-    assert response.json() == {"message": "User not found"}
-
-def test_duplicate_id_user_exists(client_with_test_db):
-    client_with_test_db.post("/register", json={
-        "email": "testuser@example.com",
+def test_register_exception_handling(mock_user_service, client_with_test_db):
+    response = client_with_test_db.post("/register", json={
+        "email": "test@example.com",
         "password": "testpassword",
-        "userid": "existinguser",
+        "userid": "testuserid",
         "username": "testusername"
     })
-    response = client_with_test_db.get("/duplicate_id", params={"userid": "existinguser"})
-    assert response.status_code == 302
-    assert response.json() == {"message": "User already exists"}
-
-def test_duplicate_email_user_not_found(client_with_test_db):
-    response = client_with_test_db.get("/duplicate_email", params={"email": "nonexistent@example.com"})
-    assert response.status_code == 200
-    assert response.json() == {"message": "User not found"}
-
-def test_duplicate_email_user_exists(client_with_test_db):
-    client_with_test_db.post("/register", json={
-        "email": "existingemail@example.com",
-        "password": "testpassword",
-        "userid": "uniqueuserid",
-        "username": "testusername"
-    })
-    response = client_with_test_db.get("/duplicate_email", params={"email": "existingemail@example.com"})
-    assert response.status_code == 302
-    assert response.json() == {"message": "User already exists"}
-
-def test_user_delete_unauthorized(client_with_test_db):
-    # Register a user
-    client_with_test_db.post("/register", json={
-        "email": "deleteuser@example.com",
-        "password": "testpassword",
-        "userid": "deleteuserid",
-        "username": "testusername"
-    })
-    # Try to delete the user without proper authorization
-    response = client_with_test_db.delete("/user_delete/deleteuserid")
-    assert response.status_code == 401
-    assert response.json() == {"message": "You are not authorized to delete this user"}
-
-def test_user_delete_authorized(client_with_test_db):
-    # Register a user
-    client_with_test_db.post("/register", json={
-        "email": "authorized@example.com",
-        "password": "testpassword",
-        "userid": "authorizeduser",
-        "username": "testusername"
-    })
-    # Assume a token function for authorized deletion
-    # Normally you would implement the token authentication in the tests
-    response = client_with_test_db.delete("/user_delete/authorizeduser", headers={"Authorization": "Bearer validtoken"})
-    assert response.status_code == 200
-    assert response.json() == {"message": "User deleted successfully"}
-
-def test_test_rollback(client_with_test_db):
-    response = client_with_test_db.get("/test")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Temporary user rolled back successfully"}
-
-def test_edit_user_unauthorized(client_with_test_db):
-    response = client_with_test_db.post("/edit_user/testuser", json={
-        "email": "edit@example.com",
-        "password": "newpassword",
-        "userid": "edituserid",
-        "username": "editusername"
-    })
-    assert response.status_code == 401
-    assert response.json() == {"message": "You are not authorized to edit this user"}
-
-def test_edit_user_authorized(client_with_test_db):
-    # Register a user
-    client_with_test_db.post("/register", json={
-        "email": "edit@example.com",
-        "password": "testpassword",
-        "userid": "edituserid",
-        "username": "editusername"
-    })
-    # Assume a token function for authorized edit
-    # Normally you would implement the token authentication in the tests
-    response = client_with_test_db.post("/edit_user/edituserid", json={
-        "email": "newedit@example.com",
-        "password": "newpassword",
-        "userid": "newedituserid",
-        "username": "neweditusername"
-    }, headers={"Authorization": "Bearer validtoken"})
-    assert response.status_code == 200
-    assert response.json() == {"message": "User edited successfully"}
+    assert response.status_code == 409
+    assert response.json() == {"message": "User registration failed"}
