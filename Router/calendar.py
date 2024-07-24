@@ -43,6 +43,7 @@ async def register_schedule(schedule_data: day_schedule_register, request: Reque
     finally:
         db.commit()
 
+#이부분을 굳이 param으로 할 이유는 없을 듯
 @router.get("/get_month_schedule")
 async def get_schedule(request: Request, year: str = Query(None), month: str = Query(None)):
     try:
