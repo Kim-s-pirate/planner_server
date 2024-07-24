@@ -53,22 +53,29 @@ def test_db():
     Base.metadata.drop_all(bind=test_engine)
     drop_test_database()
 
-# `db` 객체를 패치하는 픽스처
+# Fixture to patch 'db' objects
 @pytest.fixture(scope="module")
 def client_with_test_db(test_db):
     with patch("Service.user_service.db", test_db):
         yield TestClient(app)
 
 @pytest.fixture
-def mock_user_service(monkeypatch):
+def mock_exception_service(monkeypatch):
     # Mock user_service
     class MockUserService:
         @staticmethod
-        def find_user_by_email(email):
-            raise Exception("Test Exception")
+        def find_user_by_email_exception(email):
+            raise Exception("email Exception")
 
-    monkeypatch.setattr(user_service, "find_user_by_email", MockUserService.find_user_by_email)
+        @staticmethod
+        def find_user_by_userid_exception(userid):
+            raise Exception("userid Exception")
 
+    monkeypatch.setattr(user_service, "find_user_by_email", MockUserService.find_user_by_email_exception)
+    monkeypatch.setattr(user_service, "find_user_by_userid", MockUserService.find_user_by_userid_exception)
+
+
+# ~/register endpoint test
 def test_register_success(client_with_test_db):
     response = client_with_test_db.post("/register", json={
         "email": "test@example.com",
@@ -99,7 +106,7 @@ def test_register_userid_duplicated(client_with_test_db):
     assert response.status_code == 302
     assert response.json() == {"message": "userid duplicated"}
 
-def test_register_exception_handling(mock_user_service, client_with_test_db):
+def test_register_exception_handling(mock_exception_service, client_with_test_db):
     response = client_with_test_db.post("/register", json={
         "email": "test@example.com",
         "password": "testpassword",
@@ -108,3 +115,52 @@ def test_register_exception_handling(mock_user_service, client_with_test_db):
     })
     assert response.status_code == 409
     assert response.json() == {"message": "User registration failed"}
+
+
+# ~/duplicate_id endpoint test
+def test_duplicate_id_user_not_found(client_with_test_db):
+    response = client_with_test_db.get("/duplicate_id", params={
+        "userid": "testuserid"
+    })
+    assert response.status_code == 200
+    assert response.json() == {"message": "User not found"}
+
+def test_duplicate_id_user_already_exists(client_with_test_db):
+    response = client_with_test_db.get("/duplicate_id", params={
+        "userid": "defaultuserid"
+    })
+    assert response.status_code == 302
+    assert response.json() == {"message": "User already exists"}
+
+def test_duplicate_id_exception(mock_exception_service, client_with_test_db):
+    response = client_with_test_db.get("/duplicate_id", params={
+        "userid": "testuserid"
+    })
+    assert response.status_code == 409
+    assert response.json() == {"message": "There was some error while checking the user"}
+
+
+# ~/duplicate_email endpoint test
+def test_duplicate_email_user_not_found(client_with_test_db):
+    response = client_with_test_db.get("/duplicate_email", params={
+        "email": "test@example.com"
+    })
+    assert response.status_code == 200
+    assert response.json() == {"message": "User not found"}
+
+def test_duplicate_email_user_already_exists(client_with_test_db):
+    response = client_with_test_db.get("/duplicate_email", params={
+        "email": "default@example.com"
+    })
+    assert response.status_code == 302
+    assert response.json() == {"message": "User already exists"}
+
+def test_duplicate_email_exception(mock_exception_service, client_with_test_db):
+    response = client_with_test_db.get("/duplicate_email", params={
+        "email": "test@example.com"
+    })
+    assert response.status_code == 409
+    assert response.json() == {"message": "There was some error while checking the user"}
+
+
+# Need to implement delete, edit test code...
