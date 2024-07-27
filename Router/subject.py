@@ -27,7 +27,7 @@ async def subject_register(request: Request, subject_data: subject_register):
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         db.rollback()
-        print(e)
+        raise e
         return JSONResponse(status_code=500, content={"message": "Subject registration failed"})
     finally:
         db.commit()
@@ -73,7 +73,7 @@ async def get_subject(request: Request, subject: str):
     try:
         token = authenticate_user(request)
         found_book = book_service.find_book_by_subject(subject, token["userid"])
-        if found_book == None:
+        if found_book == []:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         data = [book_service.to_book_data(book).dict() for book in found_book]
         return JSONResponse(status_code=200, content=data)
@@ -91,7 +91,7 @@ async def get_subject(request: Request, subject: str):
 async def edit_subject(request: Request, subject: str, new_subject: str):
     try:
         token = authenticate_user(request)
-        subject_service.edit_subject_name(subject, new_subject)
+        subject_service.edit_subject_name(subject, new_subject, token["userid"])
         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
     except SubjectNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": e.__str__()})

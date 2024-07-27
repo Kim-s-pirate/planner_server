@@ -29,7 +29,6 @@ async def register_schedule(schedule_data: day_schedule_register, request: Reque
             calendar_service.delete_schedule(schedule_data.date, token["userid"])
         else:
             calendar_service.register_schedule(schedule_data, token["userid"])
-        db.commit()
         return JSONResponse(status_code=200, content={"message": "Schedule registered successfully"})
     
     except TokenNotFoundError as e:
@@ -37,7 +36,7 @@ async def register_schedule(schedule_data: day_schedule_register, request: Reque
     except TokenVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
-        print(e)
+        raise e
         db.rollback()
         return JSONResponse(status_code=500, content={"message": "There was some error while registering the schedule"})
     finally:
