@@ -31,9 +31,9 @@ class subject_service:
         db.query(subject).filter(subject.subject == name).delete()
         db.commit()
 
-    def edit_subject_name(name: str, new_name: str):
+    def edit_subject_name(name: str, new_name: str, userid: str):
         try:
-            found_subject = subject_service.find_subject_by_name(name)
+            found_subject = subject_service.find_subject_by_name(name, userid)
             if found_subject == None:
                 raise SubjectNotFoundError
             found_subject.subject = new_name

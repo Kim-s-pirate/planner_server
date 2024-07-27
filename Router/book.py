@@ -34,6 +34,8 @@ async def book_register(request: Request, book_data: book_register):
     finally:
         db.commit()
 
+#과목이 없는 경우 에러가 걸림
+
 #duplicate_book
 @router.get("/duplicate_book")
 async def duplicate_subject(request: Request, booktitle: str):
@@ -70,7 +72,26 @@ async def book_info(request: Request, booktitle: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book"})
+
+# 초성 검색 기능
+@router.get("/book_initial/{initial}")
+async def book_initial(request: Request, initial: str):
+    try:
+        token = authenticate_user(request)
+        books = book_service.find_book_by_initial(initial, token["userid"])
+        book_list = []
+        for book_entity in books:
+            book_list.append(book_service.to_book_data(book_entity).__dict__)
+        return JSONResponse(status_code=200, content={"books": book_list})
     
+    except TokenNotFoundError as e:
+        return JSONResponse(status_code=400, content={"message": "Token not found"})
+    except TokenVerificationError as e:
+        return JSONResponse(status_code=400, content={"message": "Token verification failed"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=409, content={"message": "There was some error while checking the book list"})
+
 @router.get("/book_list")
 async def book_list(request: Request):
     try:

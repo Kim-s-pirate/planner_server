@@ -1,4 +1,5 @@
-from sqlalchemy import ForeignKey, Column, Integer, String, Time, Boolean, UniqueConstraint
+import random
+from sqlalchemy import JSON, ForeignKey, Column, Integer, String, Time, Boolean, UniqueConstraint, event
 from sqlalchemy.orm import relationship
 from Database.database import Base, db, engine
 from datetime import datetime
@@ -14,6 +15,7 @@ class user(Base):
     subjects = relationship("subject", back_populates="user", cascade="all, delete, save-update")
     schedules = relationship("schedule", back_populates="user", cascade="all, delete, save-update")
     goals = relationship("goal", back_populates="user", cascade="all, delete, save-update")
+    planner = relationship("planner", back_populates="user", cascade="all, delete, save-update")
 
 class log(Base):
     __tablename__ = "logs"
@@ -32,15 +34,27 @@ class book(Base):
     memo = Column(String(150), nullable=True)
     status = Column(Boolean, default=True, nullable=False)
     subject = Column(String(50), ForeignKey('subjects.subject', ondelete="SET NULL"), nullable=True)#on update 달기
+    initial = Column(String(300), nullable=True)
     user = relationship("user", back_populates="books") 
     subject_relation = relationship("subject", back_populates="books")
     __table_args__ = (UniqueConstraint('userid', 'title', name='unique_userid_title'),)
+
+def set_initial(mapper, connenction, target):
+    from Service.book_service import book_service
+    if target.title:
+        target.initial = book_service.convert_text_to_initial(target.title)
+
+event.listen(book, 'before_insert', set_initial)
+
+def generate_random_color():
+    return "#{:06X}".format(random.randint(0, 0xFFFFFF))
 
 class subject(Base):
     __tablename__ = "subjects"
     id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
     subject = Column(String(50), index=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    color = Column(String(7), default=generate_random_color, nullable=False)
     user = relationship("user", back_populates="subjects")
     books = relationship("book", back_populates="subject_relation")
     __table_args__ = (UniqueConstraint('userid', 'subject', name='unique_userid_subject'),)
@@ -60,3 +74,25 @@ class goal(Base):
     month_goal = Column(String(300), nullable=True)
     week_goal = Column(String(500), nullable=True)
     user = relationship("user", back_populates="goals")
+
+# class to_do(Base):
+#     __tablename__ = "to_do"
+#     id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+#     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+#     title = Column(String(50), nullable=False)
+#     status = Column(Boolean, default=True, nullable=False)
+#     book_title = Column(String(50), nullable=True)
+#     book_masking = Column(String(50), nullable=True)
+#     subject = Column(String(50), nullable=True)
+#     user = relationship("user", back_populates="to_do")
+#     __table_args__ = (UniqueConstraint('userid', 'title', name='unique_userid_title'),)
+
+class planner(Base):
+    __tablename__ = "planner"
+    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    date = Column(String(50), nullable=False)
+    to_do_list = Column(JSON, nullable=True)
+    time_table_list = Column(JSON, nullable=True)
+    user = relationship("user", back_populates="planner")
+    __table_args__ = (UniqueConstraint('userid', 'date', name='unique_userid_date'),)

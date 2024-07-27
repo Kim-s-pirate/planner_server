@@ -3,6 +3,11 @@ from Data.book import *
 from Database.database import db
 from Service.subject_service import *
 
+INITIAL_LIST = [
+    "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ",
+    "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
+]
+
 class DuplicateBookError(Exception):
     def __init__(self, message="This book already exists."):
         self.message = message
@@ -47,6 +52,22 @@ class book_service:
             subject=book_entity.subject
         )
     
+    def get_initial(char):
+        base_code = 0xAC00
+        # 유니코드 값
+        unicode_value = ord(char)
+
+        if '가' <= char <= '힣':
+            # 초성 인덱스 계산
+            initial_index = (unicode_value - base_code) // (21 * 28)
+            # 초성 반환
+            return INITIAL_LIST[initial_index]
+        elif 'a' <= char <= 'z' or 'A' <= char <= "Z":
+            return char
+
+    def convert_text_to_initial(text):
+        return ''.join(book_service.get_initial(char) or '' for char in text)
+    
     def duplicate_book(title: str, userid: str):
         if db.query(book).filter(book.title == title, book.userid == userid).first() is not None:
             return True
@@ -61,6 +82,9 @@ class book_service:
     
     def find_book_by_subject(subject: str, userid: str):
         return db.query(book).filter(book.subject == subject, book.userid == userid).all()
+
+    def find_book_by_initial(initial: str, userid: str):
+        return db.query(book).filter(book.initial.like(f"%{initial}%"), book.userid == userid).all()
 
     def create_book(book: book):
         found = book_service.find_book_by_title(book.title, book.userid)
