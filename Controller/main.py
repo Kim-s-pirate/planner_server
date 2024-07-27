@@ -9,16 +9,9 @@ from starlette.status import *
 import uvicorn
 from Database.database import create_database
 from Router import register, login, main_page, book, subject, calendar, planner
-import redis.asyncio as aioredis
-redis = aioredis.from_url("redis://localhost:8000", decode_responses=True)
 create_database()
 app = FastAPI()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await redis.ping()
-    yield
-    await redis.close()
 
 app.include_router(register.router)
 app.include_router(login.router)
@@ -27,12 +20,7 @@ app.include_router(book.router)
 app.include_router(subject.router)
 app.include_router(calendar.router)
 app.include_router(planner.router)
-pong = redis.ping()
-if pong == "PONG":
-    print("존나 잘 되는 중")
-else:
-    print("존나 잘 안되는 중")
-    print(pong)
+
 # CORS
 origins = [
     "*"
