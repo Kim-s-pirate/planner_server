@@ -49,7 +49,8 @@ class book_service:
             end_page=book_entity.end_page,
             memo=book_entity.memo,
             status=book_entity.status,
-            subject=book_entity.subject
+            subject=book_entity.subject,
+            initial=book_entity.initial
         )
     
     def get_initial(char):

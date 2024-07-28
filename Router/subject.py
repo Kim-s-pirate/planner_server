@@ -17,13 +17,13 @@ router = APIRouter()
 @router.post("/subject_register")
 async def subject_register(request: Request, subject_data: subject_register):
     try:
-        token = authenticate_user(request)
-        subject_data = subject_service.to_subject_db(subject_data, token["userid"])
+        userid = AuthorizationService.verify_session(request)
+        subject_data = subject_service.to_subject_db(subject_data, userid)
         subject_service.create_subject(subject_data)
         return JSONResponse(status_code=201, content={"message": "Subject registered successfully"})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         db.rollback()
@@ -36,8 +36,7 @@ async def subject_register(request: Request, subject_data: subject_register):
 @router.get("/duplicate_subject")
 async def duplicate_subject(request: Request, subject: str):
     try:
-        token = authenticate_user(request)
-        userid = token["userid"]
+        userid = AuthorizationService.verify_session(request)
         found_subject = subject_service.find_subject_by_name(subject, userid)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})# modify?? : subject can be created
@@ -48,18 +47,17 @@ async def duplicate_subject(request: Request, subject: str):
 @router.delete("/delete_subject/{subject}")
 async def delete_subject(request: Request, subject: str):
     try:
-        token = authenticate_user(request)
-        userid = token["userid"]
+        userid = AuthorizationService.verify_session(request)
         found_subject = subject_service.find_subject_by_name(subject, userid)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
-        if found_subject.userid != token["userid"]:
+        if found_subject.userid != userid:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
         subject_service.delete_subject(subject)
         return JSONResponse(status_code=200, content={"message": "Subject deleted successfully"})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         db.rollback()
@@ -71,15 +69,15 @@ async def delete_subject(request: Request, subject: str):
 @router.get("/subject/{subject}")
 async def get_subject(request: Request, subject: str):
     try:
-        token = authenticate_user(request)
-        found_book = book_service.find_book_by_subject(subject, token["userid"])
+        userid = AuthorizationService.verify_session(request)
+        found_book = book_service.find_book_by_subject(subject, userid)
         if found_book == []:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         data = [book_service.to_book_data(book).dict() for book in found_book]
         return JSONResponse(status_code=200, content=data)
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
@@ -90,14 +88,14 @@ async def get_subject(request: Request, subject: str):
 @router.post("/edit_subject/{subject}")
 async def edit_subject(request: Request, subject: str, new_subject: str):
     try:
-        token = authenticate_user(request)
-        subject_service.edit_subject_name(subject, new_subject, token["userid"])
+        userid = AuthorizationService.verify_session(request)
+        subject_service.edit_subject_name(subject, new_subject, userid)
         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
     except SubjectNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": e.__str__()})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "Subject edit failed"})
@@ -107,15 +105,15 @@ async def edit_subject(request: Request, subject: str, new_subject: str):
 @router.get("/subject_list")
 async def get_subject_list(request: Request):
     try:
-        token = authenticate_user(request)
-        found_subject = subject_service.find_subject_by_userid(token["userid"])
+        userid = AuthorizationService.verify_session(request)
+        found_subject = subject_service.find_subject_by_userid(userid)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
-        data = {"userid": token["userid"], "subjects": [subject_service.to_subject_data(subject).subject for subject in found_subject]}
+        data = {"userid": userid, "subjects": [subject_service.to_subject_data(subject).subject for subject in found_subject]}
         return JSONResponse(status_code=200, content=data)
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)

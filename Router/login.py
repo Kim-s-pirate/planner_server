@@ -2,7 +2,7 @@ from fastapi.responses import JSONResponse
 from Database.database import db
 from Data.user import *
 from Database.models import user
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
@@ -17,13 +17,13 @@ load_dotenv("../.env")
 secret = os.getenv("secret")
     
 @router.post("/login")
-async def login(user_data: user_login, request: Request):
+async def login(user_data: user_login, request: Request, response: Response):
     try:
-        token = get_token(request)
-        if token != False:
-            verify = verify_token(token)
-            if verify == True:
-                return JSONResponse(status_code=226, content={"message": "Token already exists"})
+        session_id = AuthorizationService.get_session(request)
+        if session_id:
+            verify = AuthorizationService.check_session(request)
+            if verify:
+                return JSONResponse(status_code=226, content={"message": "Already logged in"})
             else:
                 pass #토큰은 있는데 유효하지 않은 경우
         #이미 토큰이 있는 경우에 대해서 더 처리가 필요함.
@@ -34,8 +34,13 @@ async def login(user_data: user_login, request: Request):
             return JSONResponse(status_code=423, content={"message": "User login failed"})
         #여기에 들어가는 401코드는 변경되어야 함. 현재 토큰 처리에서 401을 사용하고 있기 때문에 401을 사용하면 토큰 처리로 인식됨.
 
-        token = generate_token(user_data.email)
-        return JSONResponse(status_code=200, content={"token": token, "message": "User logged in successfully"})
+        session_id = AuthorizationService.generate_session(found_user.userid)
+        response = JSONResponse(
+            status_code=200, 
+            content={"message": "User logged in successfully"}
+        )
+        response.set_cookie(key="session_id", value=session_id, httponly=True)
+        return response
     except Exception as e:
-        print(e)
+        raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while logging in the user"})
