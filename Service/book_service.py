@@ -3,6 +3,7 @@ from Data.book import *
 from Database.database import db
 from Service.subject_service import *
 
+# initial setting
 INITIAL_LIST = [
     "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ",
     "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
