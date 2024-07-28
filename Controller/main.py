@@ -9,9 +9,16 @@ from starlette.status import *
 import uvicorn
 from Database.database import create_database
 from Router import register, login, main_page, book, subject, calendar, planner
+from starlette.middleware.sessions import SessionMiddleware
+from dotenv import load_dotenv
+
 create_database()
 app = FastAPI()
 
+load_dotenv("../.env")
+secret = os.getenv("secret")
+
+app.add_middleware(SessionMiddleware, secret_key=secret, max_age=10800)
 
 app.include_router(register.router)
 app.include_router(login.router)

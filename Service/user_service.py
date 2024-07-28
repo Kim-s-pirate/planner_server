@@ -41,14 +41,14 @@ class user_service:
         db.commit()
     
     # 해당 부분은 회의를 통해서 어디까지 수정 가능하게 서비스할지 결정해야함.
-    # def edit_user(user_data: user_edit, current_userid: str):
-    #     try:
-    #         if user_data.userid != current_userid:
-    #             user_service.edit_userid(user_data.userid, current_userid)
-    #         if user_data.username != current_userid:
-    #             user_service.edit_username(user_data.username, current_userid)
-    #     except Exception as e:
-    #         raise e
+    def edit_user(user_data: user_edit, current_userid: str):
+        try:
+            if user_data.userid != current_userid:
+                user_service.edit_userid(user_data.userid, current_userid)
+            if user_data.username != current_userid:
+                user_service.edit_username(user_data.username, current_userid)
+        except Exception as e:
+            raise e
 
     
     def edit_username(new_username: str, userid: str):

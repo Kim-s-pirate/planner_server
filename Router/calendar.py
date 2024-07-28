@@ -23,17 +23,17 @@ secret = os.getenv("secret")
 @router.post("/register_schedule")
 async def register_schedule(schedule_data: day_schedule_register, request: Request):
     try:
-        token = authenticate_user(request)
+        userid = AuthorizationService.verify_session(request)
 
         if schedule_data.schedule == None:
-            calendar_service.delete_schedule(schedule_data.date, token["userid"])
+            calendar_service.delete_schedule(schedule_data.date, userid)
         else:
-            calendar_service.register_schedule(schedule_data, token["userid"])
+            calendar_service.register_schedule(schedule_data, userid)
         return JSONResponse(status_code=200, content={"message": "Schedule registered successfully"})
     
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         raise e
@@ -46,16 +46,16 @@ async def register_schedule(schedule_data: day_schedule_register, request: Reque
 @router.get("/get_month_schedule")
 async def get_schedule(request: Request, year: str = Query(None), month: str = Query(None)):
     try:
-        token = authenticate_user(request)
-        schedule = calendar_service.get_month_schedule(year, month, token["userid"])
+        userid = AuthorizationService.verify_session(request)
+        schedule = calendar_service.get_month_schedule(year, month, userid)
         schedule = [calendar_service.to_schedule_data(s).__dict__ for s in schedule]
         for s in schedule:
             if 'date' in s and s['date']:
                 s['date'] = s['date'].isoformat()
         return JSONResponse(status_code=200, content={"schedule": schedule})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
@@ -67,16 +67,16 @@ async def get_schedule(request: Request, year: str = Query(None), month: str = Q
 @router.post("/register_calendar_goal")
 async def register_calendar_goal(goal_data: calendar_goal_register, request: Request):
     try:
-        token = authenticate_user(request)
+        userid = AuthorizationService.verify_session(request)
         if goal_data.month_goal == None and goal_data.week_goal == None:
-            calendar_service.delete_goal(goal_data.year, goal_data.month, token["userid"])
+            calendar_service.delete_goal(goal_data.year, goal_data.month, userid)
         else:
-            calendar_service.register_goal(goal_data, token["userid"])
+            calendar_service.register_goal(goal_data, userid)
         db.commit()
         return JSONResponse(status_code=200, content={"message": "Goal registered successfully"})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)
@@ -88,13 +88,13 @@ async def register_calendar_goal(goal_data: calendar_goal_register, request: Req
 @router.delete("/delete_calendar_goal/{year}/{month}")
 async def delete_calendar_goal(year: int, month: int, request: Request):
     try:
-        token = authenticate_user(request)
-        calendar_service.delete_goal(year, month, token["userid"])
+        userid = AuthorizationService.verify_session(request)
+        calendar_service.delete_goal(year, month, userid)
         db.commit()
         return JSONResponse(status_code=200, content={"message": "Goal deleted successfully"})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         print(e)

@@ -48,18 +48,20 @@ async def duplicate_email(email: str):
     except:
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the user"})
 
-@router.delete("/user_delete/{userid}")
-async def user_delete(request: Request, userid: str):
+@router.delete("/user_delete/{user_id}")
+async def user_delete(request: Request, user_id: str):
     try:
-        token = authenticate_user(request)
-        if token["userid"] != userid:
+        userid = AuthorizationService.verify_session(request)
+        if userid != user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this user"})
         user_service.delete_user(userid)
         return JSONResponse(status_code=200, content={"message": "User deleted successfully"})
-    except TokenNotFoundError as e:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while deleting the user"})
@@ -67,22 +69,24 @@ async def user_delete(request: Request, userid: str):
 @router.post("/edit_user/{current_userid}")
 async def edit_user(request: Request, user_data: user_edit, current_userid: str):
     try:
-        token = authenticate_user(request)
-        print(token)
-        if token["userid"] != current_userid:
+        userid = AuthorizationService.verify_session(request)
+        if userid != current_userid:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this user"})
         found_user = user_service.find_user_by_userid(current_userid)
         if found_user == None:
             return JSONResponse(status_code=404, content={"message": "User not found"})
         user_service.edit_user(user_data, current_userid)
-        modified_token = modify_token(found_user.email, token)
+        modified_token = AuthorizationService.modify_session(request, current_userid)
 
-        return JSONResponse(status_code=200, content={"token": modified_token, "message": "User edited successfully"})
-    except TokenNotFoundError as e:
+        return JSONResponse(status_code=200, content={"message": "User edited successfully"})
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except TokenVerificationError as e:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
     except Exception as e:
+        raise e
         db.rollback()
         return JSONResponse(status_code=500, content={"message": "There was some error while editing the user"})
     finally:
