@@ -25,12 +25,19 @@ async def subject_register(request: Request, subject_data: subject_register):
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except IndexError as e:
+        return JSONResponse(status_code=500, content={"message": "Maximum number of subjects reached"}) #해당 반환에 대한 status code 논의가 필요함
+    except SubjectAlreadyExistsError as e:
+        return JSONResponse(status_code=500, content={"message": "Subject already exists"}) #해당 반환에 대한 status code 논의가 필요함
     except Exception as e:
         db.rollback()
         raise e
         return JSONResponse(status_code=500, content={"message": "Subject registration failed"})
     finally:
         db.commit()
+
+#과목의 색을 변경할 수 있는 엔드 포인트 필요함.
+#과목끼리 색을 교환할 수 있는 엔드 포인트 필요함.
 
 #duplicate_subject
 @router.get("/duplicate_subject")
@@ -66,15 +73,15 @@ async def delete_subject(request: Request, subject: str):
     finally:
         db.commit()
 
-@router.get("/subject/{subject}")
+@router.get("/subject/{subject}") #이거 이름 수정하고 과목에 대한 엔드포인트로 변경
 async def get_subject(request: Request, subject: str):
     try:
         userid = AuthorizationService.verify_session(request)
-        found_book = book_service.find_book_by_subject(subject, userid)
-        if found_book == []:
+        found_subject = subject_service.find_subject_by_name(subject, userid)
+        if found_subject == []:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
-        data = [book_service.to_book_data(book).dict() for book in found_book]
-        return JSONResponse(status_code=200, content=data)
+        data = subject_service.to_subject_data(found_subject)
+        return JSONResponse(status_code=200, content=data.__dict__)
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:

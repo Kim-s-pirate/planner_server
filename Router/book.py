@@ -195,3 +195,22 @@ async def book_list_by_subject(request: Request, subject: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book list"})
+    
+@router.get("/book/{subject}") #이거 이름 수정하고 과목에 대한 엔드포인트로 변경
+async def get_subject_book(request: Request, subject: str):
+    try:
+        userid = AuthorizationService.verify_session(request)
+        found_book = book_service.find_book_by_subject(subject, userid)
+        if found_book == []:
+            return JSONResponse(status_code=404, content={"message": "Subject not found"})
+        data = [book_service.to_book_data(book).dict() for book in found_book]
+        return JSONResponse(status_code=200, content=data)
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=500, content={"message": "Subject retrieval failed"})
+    finally:
+        db.commit()

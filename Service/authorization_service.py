@@ -92,10 +92,3 @@ class AuthorizationService:
             raise SessionIdNotFoundError
         AuthorizationService.session_db[session_id]['userid'] = new_userid
         return True
-
-# def generate_token(email: str):
-# def modify_token(email: str, payload: dict):
-# def get_token(request: Request):
-# def decode_token(token):
-# def verify_token(token):
-# def authenticate_user(request: Request):

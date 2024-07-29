@@ -46,19 +46,24 @@ def set_initial(mapper, connenction, target):
 
 event.listen(book, 'before_insert', set_initial)
 
-def generate_random_color():
-    return "#{:06X}".format(random.randint(0, 0xFFFFFF))
+
 
 class subject(Base):
     __tablename__ = "subjects"
     id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
     subject = Column(String(50), index=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
-    color = Column(String(7), default=generate_random_color, nullable=False)
+    color = Column(String(7), nullable=False)
     user = relationship("user", back_populates="subjects")
     books = relationship("book", back_populates="subject_relation")
     __table_args__ = (UniqueConstraint('userid', 'subject', name='unique_userid_subject'),)
 
+    def __init__(self, subject, userid, color=None):
+        from Service.subject_service import subject_service
+        self.subject = subject
+        self.userid = userid
+        self.color = color if color else subject_service.random_color(userid)
+        
 class schedule(Base):
     __tablename__ = "calender"
     date = Column(String(50), primary_key=True, index=True, unique=True, nullable=False)

@@ -22,6 +22,17 @@ hex_list = ['#21ACA9', '#34CDEF', '#7398C1', '#7475BB',
             '#BFA8EE', '#CB7D60', '#D2DA40', '#D87FC8', '#E35BE5',
             '#EE5444', '#EF5A68', '#F7969A', '#F8CA8F',
             '#FA942E', '#FE5B05', '#FFF600']
+
+# hex_list = ['#000000', '#000055', '#0000aa',
+#             '#0000ff', '#005500', '#005555',
+#             '#00aa00', '#00aaaa', '#00ff00',
+#             '#00ffff', '#550000', '#550055',
+#             '#555500', '#555555', '#55aa55',
+#             '#55aaaa', '#aa0000', '#aa00aa',
+#             '#aa5555', '#aa55aa', '#aaaa00',
+#             '#aaaaaa', '#ff0000', '#ff00ff',
+#             '#ff5555', '#ffff00', '#ffffff']
+
 # hex_list = [
 #     '#FF0000',  # Red
 #     '#00FF00',  # Green
@@ -49,7 +60,11 @@ hex_list = ['#21ACA9', '#34CDEF', '#7398C1', '#7475BB',
 #     '#ADFF2F',  # Green Yellow
 #     '#4B0082'   # Indigo
 # ]
-hex_list = ['#21ACA9', '#34CDEF','#7475BB','#756C86','#ACB6B3','#B5E045',
-        '#BFA8EE', '#CB7D60','#E35BE5',
-        '#EE5444', '#EF5A68', '#F7969A', '#F8CA8F', '#EDED2A']
+hex_list = ['#21ACA9', '#34CDEF','#7475BB',
+            '#756C86','#ACB6B3','#B5E045',
+            '#BFA8EE', '#CB7D60','#E35BE5',
+            '#EE5444', '#EF5A68', '#F7969A',
+            '#F8CA8F', '#EDED2A', '#FFD749',
+            '#809A79', '#C7DBF8', '#FF94E7',
+            '#FF9568', '#D7FFAF']
 draw_color_squares(hex_list)

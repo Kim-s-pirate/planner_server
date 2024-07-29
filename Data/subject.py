@@ -7,3 +7,4 @@ class subject_register(BaseModel):
 class subject_data(BaseModel):
     userid: str
     subject: str
+    color: str
