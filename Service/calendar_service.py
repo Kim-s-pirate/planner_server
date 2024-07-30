@@ -37,10 +37,16 @@ class calendar_service:
             new_schudule = calendar_service.to_schedule_db(schedule_data, userid)
             db.add(new_schudule)
 
-    def get_month_schedule(year: int, month: int, userid: str):
+    def get_month_schedule(year: str, month: str, userid: str):
+        try:
+            year_int = int(year)
+            month_int = int(month)
+        except Exception as e:
+            raise e
+
         return db.query(schedule).filter(
-            extract('year', schedule.date) == year,
-            extract('month', schedule.date) == month,
+            extract('year', schedule.date) == year_int,
+            extract('month', schedule.date) == month_int,
             schedule.userid == userid
         ).all()
     
