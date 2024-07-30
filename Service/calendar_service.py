@@ -13,11 +13,20 @@ class calendar_service:
         )
     
     def to_schedule_data(schedule_entity: schedule):
+        if isinstance(schedule_entity.date, str):
+            try:
+                date_obj = datetime.strptime(schedule_entity.date, '%Y-%m-%d').date()
+            except Exception as e:
+                raise e
+        else:
+            date_obj = schedule_entity.date
+
         return day_schedule(
             userid=schedule_entity.userid,
-            date=schedule_entity.date,
+            date=date_obj,
             schedule=schedule_entity.schedule
         )
+
     
     def find_schedule_by_date(date: datetime, userid: str):
         return db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
