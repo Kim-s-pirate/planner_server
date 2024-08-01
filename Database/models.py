@@ -102,6 +102,19 @@ class planner(Base):
     user = relationship("user", back_populates="planner")
     __table_args__ = (UniqueConstraint('userid', 'date', name='unique_userid_date'),)
 
+    # class todo(Base):
+    #     __tablename__ = "to_do"
+    #     id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    #     title = Column(String(50), nullable=False)
+    #     status = Column(Boolean, default=True, nullable=False)
+    #     book_title = Column(String(50), ForeignKey('books.title', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
+    #     subject= Column(String(50), ForeignKey('books.subject', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
+    #     planner_id = Column(Integer, ForeignKey('planner.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    #     planner = relationship("Planner", back_populates="to_do")
+    #     book = relationship("book", back_populates="to_do")
+        
+        
+
 class verification(Base):
     __tablename__ = "verifications"
     email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
