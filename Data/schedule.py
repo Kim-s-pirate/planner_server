@@ -1,17 +1,13 @@
 from pydantic import BaseModel
 from datetime import date
 from typing import List, Optional
-
-class schedule_detail(BaseModel):
-    title: str
-    detail: str
+from Data.task import task
 
 class day_schedule_register(BaseModel):
-    schedule: Optional[List[schedule_detail]]
+    task_list: Optional[List['task']] = []
     date: date
 
 class day_schedule(BaseModel):
-    schedule: Optional[List[schedule_detail]]
+    task_list: List['task'] = []
     userid: str
     date: date
-
