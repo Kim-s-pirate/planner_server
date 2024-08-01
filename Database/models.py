@@ -68,7 +68,7 @@ class schedule(Base):
     __tablename__ = "calender"
     date = Column(String(50), primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
-    schedule = Column(JSON, nullable=False)
+    task_list = Column(JSON, nullable=False)
     user = relationship("user", back_populates="schedules")
 
 class goal(Base):
