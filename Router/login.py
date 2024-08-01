@@ -6,7 +6,6 @@ from fastapi import APIRouter, Response
 from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
-from jose import JWTError, jwt
 from datetime import datetime, timezone, timedelta
 from Service.authorization_service import *
 import os
@@ -44,3 +43,16 @@ async def login(user_data: user_login, request: Request, response: Response):
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while logging in the user"})
+
+@router.get("/logout")
+async def logout(request: Request, response: Response):
+    try:
+        session_id = AuthorizationService.verify_session(request)
+        AuthorizationService.delete_session(request)
+        return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})

@@ -1,8 +1,8 @@
 import random
-from sqlalchemy import JSON, ForeignKey, Column, Integer, String, Time, Boolean, UniqueConstraint, event
+from sqlalchemy import JSON, DateTime, ForeignKey, Column, Integer, String, Time, Boolean, UniqueConstraint, event
 from sqlalchemy.orm import relationship
 from Database.database import Base, db, engine
-from datetime import datetime
+from datetime import datetime, timezone
 
 class user(Base):
     __tablename__ = "users"
@@ -68,7 +68,7 @@ class schedule(Base):
     __tablename__ = "calender"
     date = Column(String(50), primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
-    schedule = Column(String(300), nullable=False)
+    schedule = Column(JSON, nullable=False)
     user = relationship("user", back_populates="schedules")
 
 class goal(Base):
@@ -101,3 +101,9 @@ class planner(Base):
     time_table_list = Column(JSON, nullable=True)
     user = relationship("user", back_populates="planner")
     __table_args__ = (UniqueConstraint('userid', 'date', name='unique_userid_date'),)
+
+class verification(Base):
+    __tablename__ = "verifications"
+    email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
+    code = Column(String(10), nullable=False)
+    time = Column(DateTime, default=datetime.now, nullable=False)  # 현재 시간을 기본값으로 설정

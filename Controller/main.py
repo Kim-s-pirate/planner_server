@@ -1,18 +1,31 @@
 from contextlib import asynccontextmanager
 import sys
 import os
+import time
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from Database.database import db
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from starlette.status import *
 import uvicorn
-from Database.database import create_database
+from Database.database import create_database, engine
 from Router import register, login, main_page, book, subject, calendar, planner, email
 from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 
 create_database()
+
+from Service.email_service import email_service
+import threading
+import schedule
+
+schedule.every(10).minutes.do(email_service.delete_expired_verification)
+
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
 app = FastAPI()
 
 load_dotenv("../.env")
@@ -42,4 +55,7 @@ app.add_middleware(
 )
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True)
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
+    uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True, ssl_keyfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\key.pem", ssl_certfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\cert.pem" )
