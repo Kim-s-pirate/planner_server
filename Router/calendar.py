@@ -20,38 +20,39 @@ router = APIRouter()
 load_dotenv("../.env")
 secret = os.getenv("secret")
 
+
 @router.post("/register_schedule")
 async def register_schedule(schedule_data: day_schedule_register, request: Request):
     try:
         userid = AuthorizationService.verify_session(request)
 
-        if schedule_data.schedule == None:
+        if schedule_data.task_list == []:
             calendar_service.delete_schedule(schedule_data.date, userid)
         else:
-            calendar_service.register_schedule(schedule_data, userid)
+            schedule_data = calendar_service.to_schedule_db(schedule_data, userid)
+            calendar_service.register_schedule(schedule_data)
         return JSONResponse(status_code=200, content={"message": "Schedule registered successfully"})
-    
+
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
-        raise e
         db.rollback()
+        raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while registering the schedule"})
     finally:
         db.commit()
 
-#이부분을 굳이 param으로 할 이유는 없을 듯
+
+# 이부분을 굳이 param으로 할 이유는 없을 듯
 @router.get("/get_month_schedule")
 async def get_schedule(request: Request, year: str = Query(None), month: str = Query(None)):
     try:
         userid = AuthorizationService.verify_session(request)
         schedule = calendar_service.get_month_schedule(year, month, userid)
-        schedule = [calendar_service.to_schedule_data(s).__dict__ for s in schedule]
-        for s in schedule:
-            if 'date' in s and s['date']:
-                s['date'] = s['date'].isoformat()
+        schedule = [calendar_service.to_schedule_data(s) for s in schedule]
+        schedule = [calendar_service.schedule_to_dict(s) for s in schedule]
         return JSONResponse(status_code=200, content={"schedule": schedule})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
