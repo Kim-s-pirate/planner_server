@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입 인증 요청</title>
+    <style>
+        /* 이메일 클라이언트 호환성을 고려한 기본 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .logo img {
+            display: block;
+            margin: 0 auto;
+            max-width: 100px; /* 적절한 로고 크기 조절 */
+        }
+        .header_title {
+            text-align: center;
+            color: #333;
+        }
+        .verification-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .verification-code .number_box {
+            display: inline-block;
+            width: 45px;
+            height: 45px;
+            margin: 5px;
+            border: 2px solid black;
+            border-radius: 5px;
+            font-size: 25px;
+            line-height: 45px; /* 수직 중앙 정렬 */
+            text-align: center;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="logo_url" alt="로고">
+        </div>
+        <h2 class="header_title">회원가입 인증 요청</h2>
+        <hr>
+        <p><strong>[서비스명]</strong>과 함께 해주셔서 감사합니다!</p>
+        <p>회원 가입을 완료하기 위해서 아래의 번호를 인증란에 입력하여 이메일 주소를 인증해주세요</p>
+        <div class="verification-code">
+            <div class="verification-code">
+                {% for digit in verification_code %}
+                    <div class="number_box" type="text" maxlength="1">{{ digit }}</div>
+                {% endfor %}
+        </div>
+        <p>이 메일은 [서비스명] 계정을 생성하기 위한 절차의 일환으로 발송되었습니다. 만약 계정을 생성한 본인이 아닌 경우 해당 메일은 무시해주시면 됩니다.</p>
+        <p>감사합니다</p>
+    </div>
+</body>
+</html>
+
+

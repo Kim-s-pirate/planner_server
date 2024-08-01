@@ -1,5 +1,4 @@
 from fastapi.responses import JSONResponse
-import redis
 from Database.database import db
 from Data.user import *
 from Database.models import user

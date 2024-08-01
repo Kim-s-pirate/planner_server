@@ -1,32 +1,63 @@
+import os
+import random
+import secrets
 from fastapi import FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 from typing import List
 from fastapi import APIRouter
 import yagmail
+from Data.email import *
+from Service.email_service import *
+from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
 
+templates = Jinja2Templates(directory="Resource")
 router = APIRouter()
 #This code test is done. It works well.
 # -> need to be make real email, app password
 
-gmail_user = 'email'
-gmail_password = 'app password'
+load_dotenv("../.env")
+email = os.getenv("email")
+password = os.getenv("password")
+gmail_user = email
+gmail_password = password
 
 # 수신자 이메일과 메시지 내용
 subject = 'Test Email'
 body = 'This is a test email sent using yagmail.'
 
-@router.post("/send-email")
-async def send_email(request: Request):
-    request = await request.json()
-    email_address = request['email']
-    yag = yagmail.SMTP(user=gmail_user, password=gmail_password)
 
-    # 이메일 전송
-    yag.send(
-        to=email_address,
-        subject=subject,
-        contents=body,
-    )
+@router.post("/send_email/register")
+async def send_email(request: Request, email: email_request):
+    try:
+        
+        email = email.email
+        subject = "회원가입 이메일 인증"
+        verification_code = ''.join(random.choices('0123456789', k=6))
+        body = templates.get_template("email_verification_form.html").render(request=request, verification_code=verification_code)
+        yag = yagmail.SMTP(user=gmail_user, password=gmail_password)
+        yag.send(
+            to=email,
+            subject=subject,
+            contents=body,
+        )
+        email_service.register_verification(email, verification_code)
+        return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
+    except Exception as e:
+        raise e
+        db.rollback()
+        return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
+    finally:
+        db.commit()
 
-    return {"message": "Email sent successfully!"}
-
+@router.post("/verification_code")
+async def verification_code(verify: email_verification):
+    email = verify.email
+    code = verify.code
+    found = email_service.find_verification_by_email(email)
+    if found is None:
+        return JSONResponse(status_code=404, content={"message": "Email not found"})
+    if found.code != code:
+        return JSONResponse(status_code=401, content={"message": "Verification code is incorrect"})
+    return JSONResponse(status_code=200, content={"message": "Verification code is correct"})

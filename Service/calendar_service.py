@@ -13,19 +13,35 @@ class calendar_service:
         )
     
     def to_schedule_data(schedule_entity: schedule):
-        if isinstance(schedule_entity.date, str):
-            try:
-                date_obj = datetime.strptime(schedule_entity.date, '%Y-%m-%d').date()
-            except Exception as e:
-                raise e
-        else:
-            date_obj = schedule_entity.date
-
         return day_schedule(
             userid=schedule_entity.userid,
-            date=date_obj,
+            date=schedule_entity.date,
             schedule=schedule_entity.schedule
         )
+    #코드 바뀐 이유 확인 후 작업
+    
+    # def to_schedule_data(schedule_entity: schedule):
+    #     if isinstance(schedule_entity.date, str):
+    #         try:
+    #             date_obj = datetime.strptime(schedule_entity.date, '%Y-%m-%d').date()
+    #             print(type(schedule_entity.date))
+    #             print(type(date_obj))
+    #             a= day_schedule(
+    #                 userid=schedule_entity.userid,
+    #                 date=date_obj,
+    #                 schedule=schedule_entity.schedule
+    #             )
+    #             print(type(a.date))
+    #         except Exception as e:
+    #             raise e
+    #     else:
+    #         date_obj = schedule_entity.date
+
+    #     return day_schedule(
+    #         userid=schedule_entity.userid,
+    #         date=date_obj,
+    #         schedule=schedule_entity.schedule
+    #     )
 
     
     def find_schedule_by_date(date: datetime, userid: str):
@@ -47,17 +63,12 @@ class calendar_service:
             db.add(new_schudule)
 
     def get_month_schedule(year: str, month: str, userid: str):
-        try:
-            year_int = int(year)
-            month_int = int(month)
-        except Exception as e:
-            raise e
-
         return db.query(schedule).filter(
-            extract('year', schedule.date) == year_int,
-            extract('month', schedule.date) == month_int,
+            extract('year', schedule.date) == year,
+            extract('month', schedule.date) == month,
             schedule.userid == userid
         ).all()
+    #해당 코드는 str, int 모두 잘 되기 때문에 str을 받는 것으로 해서 변경
     
     def to_calendar_goal_db(goal_data: calendar_goal_register, userid: str):
         return goal(
