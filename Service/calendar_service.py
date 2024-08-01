@@ -2,75 +2,107 @@ from sqlalchemy import extract
 from Database.models import *
 from Data.schedule import *
 from Data.calendar import *
+from Data.task import task
 from Database.database import db
+from datetime import date, datetime
+from Service.date_service import date_service
+import json
+
 
 class calendar_service:
-    def to_schedule_db(schedule_data: day_schedule, userid: str):
+    @staticmethod
+    def to_schedule_db(schedule_data: day_schedule_register, userid: str) -> schedule:
+        task_list_json = json.dumps([t.to_dict() for t in schedule_data.task_list])
+
         return schedule(
             userid=userid,
             date=schedule_data.date,
-            schedule=schedule_data.schedule
+            task_list=task_list_json
         )
-    
+
+    @staticmethod
     def to_schedule_data(schedule_entity: schedule):
+        task_list = [task.from_dict(t) for t in json.loads(schedule_entity.task_list)]
+
         return day_schedule(
             userid=schedule_entity.userid,
             date=schedule_entity.date,
-            schedule=schedule_entity.schedule
+            task_list=task_list
         )
-    #코드 바뀐 이유 확인 후 작업
-    
-    # def to_schedule_data(schedule_entity: schedule):
-    #     if isinstance(schedule_entity.date, str):
-    #         try:
-    #             date_obj = datetime.strptime(schedule_entity.date, '%Y-%m-%d').date()
-    #             print(type(schedule_entity.date))
-    #             print(type(date_obj))
-    #             a= day_schedule(
-    #                 userid=schedule_entity.userid,
-    #                 date=date_obj,
-    #                 schedule=schedule_entity.schedule
-    #             )
-    #             print(type(a.date))
-    #         except Exception as e:
-    #             raise e
-    #     else:
-    #         date_obj = schedule_entity.date
 
-    #     return day_schedule(
-    #         userid=schedule_entity.userid,
-    #         date=date_obj,
-    #         schedule=schedule_entity.schedule
-    #     )
+    @staticmethod
+    def schedule_to_dict(schedule_data: day_schedule) -> dict:
+        return {
+            "userid": schedule_data.userid,
+            "date": schedule_data.date.isoformat(),
+            "task_list": [task.to_dict(t) for t in schedule_data.task_list]
+        }
 
-    
-    def find_schedule_by_date(date: datetime, userid: str):
+    @staticmethod
+    def task_register_to_dict(task_register: task) -> dict:
+        return task_register.to_dict()
+
+    @staticmethod
+    def find_schedule_by_date(date: date, userid: str) -> schedule:
         return db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
-    
-    def delete_schedule(date: datetime, userid: str):
-        db.query(schedule).filter(schedule.date == date, schedule.userid == userid).delete()
-        db.commit()
 
-    def register_schedule(schedule_data: day_schedule, userid: str):
-        schedule_entity = calendar_service.find_schedule_by_date(schedule_data.date, userid)
-        if schedule_entity == None:
-            schedule_entity = calendar_service.to_schedule_db(schedule_data, userid)
-            db.add(schedule_entity)
-        else:
-            db.delete(schedule_entity)
+    @staticmethod
+    def delete_schedule(date: date, userid: str):
+        try:
+            existing_schedule = db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
+            if existing_schedule:
+                db.delete(existing_schedule)
+                db.commit()
+        except Exception as e:
+            db.rollback()
+            raise e
+
+    @staticmethod
+    def register_schedule(schedule_data: day_schedule):
+        try:
+            existing_schedule = calendar_service.find_schedule_by_date(schedule_data.date, schedule_data.userid)
+            if existing_schedule:
+                db.delete(existing_schedule)
+                db.commit()
+
+            if isinstance(schedule_data.task_list, str):
+                task_list = [task.from_dict(t) for t in json.loads(schedule_data.task_list)]
+            else:
+                task_list = schedule_data.task_list
+
+            new_schedule = calendar_service.to_schedule_db(
+                day_schedule_register(
+                    task_list=task_list,
+                    date=schedule_data.date
+                ), schedule_data.userid
+            )
+            db.add(new_schedule)
             db.commit()
-            new_schudule = calendar_service.to_schedule_db(schedule_data, userid)
-            db.add(new_schudule)
+        except Exception as e:
+            db.rollback()
+            raise e
 
-    def get_month_schedule(year: str, month: str, userid: str):
-        return db.query(schedule).filter(
+    @staticmethod
+    def get_month_schedule(year: str, month: str, userid: str) -> list:
+        results = db.query(schedule).filter(
             extract('year', schedule.date) == year,
             extract('month', schedule.date) == month,
             schedule.userid == userid
         ).all()
-    #해당 코드는 str, int 모두 잘 되기 때문에 str을 받는 것으로 해서 변경
-    
-    def to_calendar_goal_db(goal_data: calendar_goal_register, userid: str):
+
+        formatted_results = []
+        for result in results:
+            formatted_result = schedule(
+                date=date_service.get_date(result.date),
+                userid=result.userid,
+                task_list=result.task_list,
+            )
+            formatted_results.append(formatted_result)
+
+        return formatted_results
+
+    @staticmethod
+    def to_calendar_goal_db(goal_data: calendar_goal_register, userid: str) -> goal:
         return goal(
             year=goal_data.year,
             month=goal_data.month,
@@ -78,8 +110,9 @@ class calendar_service:
             week_goal=goal_data.week_goal,
             userid=userid
         )
-    
-    def to_calendar_goal_data(goal_entity: calendar_goal):
+
+    @staticmethod
+    def to_calendar_goal_data(goal_entity: goal) -> calendar_goal:
         return calendar_goal(
             year=goal_entity.year,
             month=goal_entity.month,
@@ -87,25 +120,31 @@ class calendar_service:
             week_goal=goal_entity.week_goal,
             userid=goal_entity.userid
         )
-    
-    def find_goal(year: int, month: int, userid: str):
+
+    @staticmethod
+    def find_goal(year: int, month: int, userid: str) -> goal:
         return db.query(goal).filter(
             goal.year == year,
             goal.month == month,
             goal.userid == userid
         ).first()
-    
+
+    @staticmethod
     def register_goal(goal_data: calendar_goal_register, userid: str):
         try:
-            if (goal_entity := calendar_service.find_goal(goal_data.year, goal_data.month, userid)) != None:
-                goal_entity.month_goal = goal_data.month_goal
-                goal_entity.week_goal = goal_data.week_goal
+            existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, userid)
+            if existing_goal:
+                existing_goal.month_goal = goal_data.month_goal
+                existing_goal.week_goal = goal_data.week_goal
             else:
-                goal_entity = calendar_service.to_calendar_goal_db(goal_data, userid)
-                db.add(goal_entity)
+                new_goal = calendar_service.to_calendar_goal_db(goal_data, userid)
+                db.add(new_goal)
+            db.commit()
         except Exception as e:
+            db.rollback()
             raise e
-    
+
+    @staticmethod
     def delete_goal(year: int, month: int, userid: str):
         try:
             db.query(goal).filter(
@@ -113,5 +152,7 @@ class calendar_service:
                 goal.month == month,
                 goal.userid == userid
             ).delete()
+            db.commit()
         except Exception as e:
+            db.rollback()
             raise e
