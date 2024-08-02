@@ -1,6 +1,7 @@
 from pydantic import BaseModel, validator
 from typing import List, Optional, Set
 import re
+from datetime import date
 
 from Service.subject_service import *
 #6:0
@@ -46,11 +47,15 @@ class unit_time:
             return self.position >= other.position
         return self.hour >= other.hour
     
-class time_table(BaseModel):
+class time_table_register(BaseModel):
+    date: date
     subject: str
     time: Optional[List[unit_time]] = []
 
-    @validator('time', pre=True, each_item=True)
+    def __hash__(self):
+        return hash((self.date, self.subject, tuple(sorted(self.time))))
+
+    @validator('time', pre=True, each_item=True) #deprecated few days ago -> @field_validator
     def time_validator(cls, v):
         if isinstance(v, unit_time):
             return v
@@ -62,15 +67,31 @@ class time_table(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+
+    
+class time_table_data(BaseModel):
+    date: date
+    userid: str
+    subject: str
+    time: Optional[List[unit_time]] = []
+
+    def __hash__(self):
+        return hash((self.date, self.subject, tuple(sorted(self.time))))
+
+    class Config:
+        arbitrary_types_allowed = True
+
     @classmethod
     def from_dict(cls, data):
         return cls(
+            date=data["date"],
             subject=data["subject"],
             time=list([unit_time(t) for t in data["time"]])
         )
     
     def to_dict(self):
         return {
+            "date": self.date,
             "subject": self.subject,
             "time": [str(t) for t in self.time]
         }

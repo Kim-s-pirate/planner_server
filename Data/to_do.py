@@ -1,15 +1,33 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import date
 
-class to_do(BaseModel):
+class to_do_register(BaseModel):
+    date: date
     title: str
     status: Optional[bool] = True
     book_title: Optional[str] = None
     subject: Optional[str] = None
 
+    def __hash__(self):
+        return hash((self.date, self.title, self.status, self.book_title, self.subject))
+
+
+class to_do_data(BaseModel):
+    date: date
+    userid: str
+    title: str
+    status: Optional[bool] = True
+    book_title: Optional[str] = None
+    subject: Optional[str] = None
+
+    def __hash__(self):
+        return hash((self.date, self.title, self.status, self.book_title, self.subject))
+    
     @classmethod
     def from_dict(cls, data):
         return cls(
+            date=data["date"],
             title=data["title"],
             status=data["status"],
             book_title=data["book_title"],
@@ -18,9 +36,9 @@ class to_do(BaseModel):
     
     def to_dict(self):
         return {
+            "date": self.date,
             "title": self.title,
             "status": self.status,
             "book_title": self.book_title,
             "subject": self.subject
         }
-
