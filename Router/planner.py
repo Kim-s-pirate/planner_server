@@ -13,44 +13,28 @@ router = APIRouter()
 @router.post("/planner_register")
 async def planner_register(request: Request, planner_data: planner_register):
     try:
-        userid = AuthorizationService.verify_session(request)
-        if planner_data.to_do_list == [] and planner_data.time_table_list == []:
-            planner_service.delete_planner(planner_data.date, userid)
-        else:
-            planner_service.subject_validator(planner_data, userid)
-            planner_data = planner_service.to_planner_db(planner_data, userid)
-            planner_service.register_planner(planner_data)
-        return JSONResponse(status_code=200, content={"message": "Planner registered successfully"})
-    #여기서 날리는 200에 대해서 201과 200에 대한 차이는 프론트랑 얘기해보기
-    except SubjectNotFoundError as e:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except SessionIdNotFoundError as e:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except Exception as e:
-        db.rollback()
-        raise e
-        return JSONResponse(status_code=500, content={"message": "Planner registration failed"})
-    finally:
-        db.commit()
+        user = AuthorizationService.verify_session(request)
+        to_do_list = planner_data.to_do_list
+        time_table_list = planner_data.time_table_list
+        if to_do_list == [] and time_table_list == []:
+            planner_service.delete_planner_by_date(planner_data.date, user)
+        if to_do_list == []:
+            planner_service.delete_to_do_by_date(planner_data.date, user)
+        if time_table_list == []:
+            planner_service.delete_time_table_by_date(planner_data.date, user)
+        #여기 처리 방식이 잘못됐음
+        #어짜피 다시 등록되기 때문에 확인 후 수정
+        planner_service.register_planner(user, planner_data)
 
-@router.get("/get_planner")
-async def get_planner(request: Request, year: str = Query(None), month: str = Query(None), day: str = Query(None)):
-    try:
-        userid = AuthorizationService.verify_session(request)
-        date = datetime.date(datetime(int(year), int(month), int(day)))
-        planner = planner_service.find_planner_by_date(date, userid)
-        planner = planner_service.to_planner_data(planner)
-        planner = planner_service.planner_to_dict(planner)
-        return JSONResponse(status_code=200, content={"planner": planner})
-    except SessionIdNotFoundError as e:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+        planner_service.register_planner_study_time(planner_data.date, user)
+        return JSONResponse(status_code=200, content={"message": "planner registered successfully"})
     except Exception as e:
         db.rollback()
         raise e
-        return JSONResponse(status_code=500, content={"message": "There was some error while getting the planner"})
+        return JSONResponse(status_code=500, content={"message": str(e)})
     finally:
         db.commit()
+# @router.get("/get_planner")
+# async def get_planner(request: Request, year: str = Query(None), month: str = Query(None), day: str = Query(None)):
+#     try:
+        
