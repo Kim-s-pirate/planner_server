@@ -43,11 +43,11 @@ class calendar_service:
         return task_register.to_dict()
 
     @staticmethod
-    def find_schedule_by_date(date: date, userid: str) -> schedule:
+    def find_schedule_by_date(date: date, userid: str, db) -> schedule:
         return db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
 
     @staticmethod
-    def delete_schedule(date: date, userid: str):
+    def delete_schedule(date: date, userid: str, db):
         try:
             existing_schedule = db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
             if existing_schedule:
@@ -58,7 +58,7 @@ class calendar_service:
             raise e
 
     @staticmethod
-    def register_schedule(schedule_data: day_schedule):
+    def register_schedule(schedule_data: day_schedule, db):
         try:
             existing_schedule = calendar_service.find_schedule_by_date(schedule_data.date, schedule_data.userid)
             if existing_schedule:
@@ -83,7 +83,7 @@ class calendar_service:
             raise e
 
     @staticmethod
-    def get_month_schedule(year: str, month: str, userid: str) -> list:
+    def get_month_schedule(year: str, month: str, userid: str, db) -> list:
         results = db.query(schedule).filter(
             extract('year', schedule.date) == year,
             extract('month', schedule.date) == month,
@@ -122,7 +122,7 @@ class calendar_service:
         )
 
     @staticmethod
-    def find_goal(year: int, month: int, userid: str) -> goal:
+    def find_goal(year: int, month: int, userid: str, db) -> goal:
         return db.query(goal).filter(
             goal.year == year,
             goal.month == month,
@@ -130,9 +130,9 @@ class calendar_service:
         ).first()
 
     @staticmethod
-    def register_goal(goal_data: calendar_goal_register, userid: str):
+    def register_goal(goal_data: calendar_goal_register, userid: str, db):
         try:
-            existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, userid)
+            existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, userid, db)
             if existing_goal:
                 existing_goal.month_goal = goal_data.month_goal
                 existing_goal.week_goal = goal_data.week_goal
@@ -145,7 +145,7 @@ class calendar_service:
             raise e
 
     @staticmethod
-    def delete_goal(year: int, month: int, userid: str):
+    def delete_goal(year: int, month: int, userid: str, db):
         try:
             db.query(goal).filter(
                 goal.year == year,

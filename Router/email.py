@@ -8,6 +8,7 @@ from typing import List
 from fastapi import APIRouter
 import yagmail
 from Data.email import *
+from Database.database import get_db
 from Service.email_service import *
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
@@ -42,7 +43,7 @@ async def send_email(request: Request, email: email_request):
             subject=subject,
             contents=body,
         )
-        email_service.register_verification(email, verification_code)
+        email_service.register_verification(email, verification_code, db)
         return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
     except Exception as e:
         raise e
@@ -53,11 +54,18 @@ async def send_email(request: Request, email: email_request):
 
 @router.post("/verification_code")
 async def verification_code(verify: email_verification):
-    email = verify.email
-    code = verify.code
-    found = email_service.find_verification_by_email(email)
-    if found is None:
-        return JSONResponse(status_code=404, content={"message": "Email not found"})
-    if found.code != code:
-        return JSONResponse(status_code=401, content={"message": "Verification code is incorrect"})
-    return JSONResponse(status_code=200, content={"message": "Verification code is correct"})
+    try:
+        db = get_db()
+        email = verify.email
+        code = verify.code
+        found = email_service.find_verification_by_email(email, db)
+        if found is None:
+            return JSONResponse(status_code=404, content={"message": "Email not found"})
+        if found.code != code:
+            return JSONResponse(status_code=401, content={"message": "Verification code is incorrect"})
+        return JSONResponse(status_code=200, content={"message": "Verification code is correct"})
+    except Exception as e:
+        raise e
+        return JSONResponse(status_code=500, content={"message": "There was some error while verifying the code"})
+    finally:
+        db.close()

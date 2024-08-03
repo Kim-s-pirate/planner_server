@@ -1,7 +1,7 @@
 import random
 from sqlalchemy import JSON, DateTime, ForeignKey, Column, Index, Integer, PrimaryKeyConstraint, String, Time, Boolean, UniqueConstraint, event
 from sqlalchemy.orm import relationship
-from Database.database import Base, db, engine
+from Database.database import Base, db, engine, get_db
 from datetime import datetime, timezone
 
 class user(Base):
@@ -72,13 +72,15 @@ class subject(Base):
     color = Column(String(7), nullable=False)
     user = relationship("user", back_populates="subjects")
     books = relationship("book", back_populates="subject_relation")
+    time_table = relationship("time_table", back_populates="subject_relation")
     __table_args__ = (UniqueConstraint('userid', 'subject', name='unique_userid_subject'),)
 
     def __init__(self, subject, userid, color=None):
+        db = get_db()
         from Service.subject_service import subject_service
         self.subject = subject
         self.userid = userid
-        self.color = color if color else subject_service.random_color(userid)
+        self.color = color if color else subject_service.random_color(userid, db)
         
 class schedule(Base):
     __tablename__ = "calender"
@@ -135,6 +137,7 @@ class time_table(Base):
     subject = Column(String(50), ForeignKey('subjects.subject', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
     time = Column(JSON, nullable=False)
     user = relationship("user", back_populates="time_table")
+    subject_relation = relationship("subject", back_populates="time_table")
     __table_args__ = (UniqueConstraint('userid', 'date', 'subject', name='unique_userid_date_subject'),)
         
 class verification(Base):

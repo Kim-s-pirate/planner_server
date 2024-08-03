@@ -1,5 +1,6 @@
 from fastapi.responses import JSONResponse
-from Database.database import db
+from sqlalchemy import text
+from Database.database import get_db
 from fastapi import APIRouter
 from starlette.status import *
 from jose import JWTError, jwt
@@ -17,9 +18,12 @@ secret = os.getenv("secret")
 @router.post("/book_register")
 async def book_register(request: Request, book_data: book_register):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        userid = AuthorizationService.verify_session(request, db)
         book_data = book_service.to_book_db(book_data, userid)
-        result = book_service.create_book(book_data)
+        result = book_service.create_book(book_data, db)
         if result == False:
             return JSONResponse(status_code=302, content={"message": "Book already exists"})
         return JSONResponse(status_code=201, content={"message": "Book registered successfully"})
@@ -33,6 +37,8 @@ async def book_register(request: Request, book_data: book_register):
         return JSONResponse(status_code=500, content={"message": "Book registration failed"})
     finally:
         db.commit()
+        db.close()
+
 
 #과목이 없는 경우 에러가 걸림
 
@@ -40,14 +46,17 @@ async def book_register(request: Request, book_data: book_register):
 @router.get("/duplicate_book")
 async def duplicate_subject(request: Request, booktitle: str):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
         userid = userid
-        found_book = book_service.find_book_by_title(booktitle, userid)
+        found_book = book_service.find_book_by_title(booktitle, userid, db)
         if found_book == None:
             return JSONResponse(status_code=404, content={"message": "Book not found"})# modify?? : subject can be created
         return JSONResponse(status_code=409, content={"message": f"Book '{booktitle}' already exists"})
     except:
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book"})
+    finally:
+        db.close()
 
 
 #이부분 책 검색에 대한 검색 기준을 확립할 필요가 있음
@@ -59,10 +68,11 @@ async def duplicate_subject(request: Request, booktitle: str):
 @router.get("/book/{booktitle}")
 async def book_info(request: Request, booktitle: str):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
         if book_service.find_book_by_title(booktitle, userid).userid != userid:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-        book = book_service.find_book_by_title(booktitle, userid)
+        book = book_service.find_book_by_title(booktitle, userid, db)
         if book == None:
             return JSONResponse(status_code=404, content={"message": "Book not found"})
         return JSONResponse(status_code=200, content={"book":book_service.to_book_data(book).__dict__})
@@ -73,13 +83,17 @@ async def book_info(request: Request, booktitle: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book"})
+    finally:
+        db.close()
+
 
 # 초성 검색 기능
 @router.get("/book_initial/{initial}")
 async def book_initial(request: Request, initial: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        books = book_service.find_book_by_initial(initial, userid)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        books = book_service.find_book_by_initial(initial, userid, db)
         book_list = []
         for book_entity in books:
             book_list.append(book_service.to_book_data(book_entity).__dict__)
@@ -92,11 +106,14 @@ async def book_initial(request: Request, initial: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=409, content={"message": "There was some error while checking the book list"})
+    finally:
+        db.close()
 
 @router.get("/book_list")
 async def book_list(request: Request):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
         books = db.query(book).filter(book.userid == userid).all()
         book_list = []
         for book_entity in books:
@@ -109,14 +126,19 @@ async def book_list(request: Request):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book list"})
+    finally:
+        db.close()
     
 @router.delete("/book_delete/{title}")
 async def book_delete(request: Request, title: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        if book_service.find_book_by_title(title, userid).userid != userid:
+        db = get_db()
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        userid = AuthorizationService.verify_session(request, db)
+        if book_service.find_book_by_title(title, userid, db).userid != userid:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this book"})
-        book_service.delete_book(title, userid)
+        book_service.delete_book(title, userid, db)
         return JSONResponse(status_code=200, content={"message": "Book deleted successfully"})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -125,11 +147,16 @@ async def book_delete(request: Request, title: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while deleting the book"})
+    finally:
+        db.commit()
+        db.close()
 
 @router.get("/active_book_list")
 async def active_book_list(request: Request):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        #여기 서비스 코드로 보내야함
         books = db.query(book).filter(book.userid == userid, book.status == True).all()
         book_list = []
         for book_entity in books:
@@ -142,11 +169,14 @@ async def active_book_list(request: Request):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book list"})
+    finally:
+        db.close()
     
 @router.get("/inactive_book_list")
 async def inactive_book_list(request: Request):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
         books = db.query(book).filter(book.userid == userid, book.status == False).all()
         book_list = []
         for book_entity in books:
@@ -159,12 +189,17 @@ async def inactive_book_list(request: Request):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book list"})
+    finally:
+        db.close()
     
 @router.post("/edit_book/{title}")
 async def edit_book(request: Request, book_data: book_edit, title: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        book = book_service.edit_book(book_data, userid, title)
+        db = get_db()
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        userid = AuthorizationService.verify_session(request, db)
+        book = book_service.edit_book(book_data, userid, title, db)
         if book == False:
             return JSONResponse(status_code=302, content={"message": "Book title already exists"})
         return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
@@ -178,11 +213,13 @@ async def edit_book(request: Request, book_data: book_edit, title: str):
         return JSONResponse(status_code=500, content={"message": e.__str__()})
     finally:
         db.commit()
+        db.close()
 
 @router.get("/book_list/{subject}")
 async def book_list_by_subject(request: Request, subject: str):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
         books = db.query(book).filter(book.userid == userid, book.subject == subject).all()
         book_list = []
         for book_entity in books:
@@ -195,12 +232,15 @@ async def book_list_by_subject(request: Request, subject: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the book list"})
+    finally:
+        db.close()
     
 @router.get("/book/{subject}") #이거 이름 수정하고 과목에 대한 엔드포인트로 변경
 async def get_subject_book(request: Request, subject: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        found_book = book_service.find_book_by_subject(subject, userid)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        found_book = book_service.find_book_by_subject(subject, userid, db)
         if found_book == []:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         data = [book_service.to_book_data(book).dict() for book in found_book]
@@ -213,4 +253,4 @@ async def get_subject_book(request: Request, subject: str):
         print(e)
         return JSONResponse(status_code=500, content={"message": "Subject retrieval failed"})
     finally:
-        db.commit()
+        db.close()

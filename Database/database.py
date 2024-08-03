@@ -15,3 +15,8 @@ def create_database():
         conn.commit()
     Base.metadata.create_all(bind=engine)
 
+def get_db():
+    return SessionLocal()
+
+def rollback_to_savepoint(db, savepoint_name="savepoint"):
+    db.execute(text(f"ROLLBACK TO SAVEPOINT {savepoint_name}"))

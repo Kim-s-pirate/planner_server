@@ -11,6 +11,9 @@ class to_do_register(BaseModel):
 
     def __hash__(self):
         return hash((self.date, self.title, self.status, self.book_title, self.subject))
+    
+    def __eq__(self, other):
+        return self.date == other.date and self.title == other.title and self.status == other.status and self.book_title == other.book_title and self.subject == other.subject
 
 
 class to_do_data(BaseModel):
@@ -23,6 +26,9 @@ class to_do_data(BaseModel):
 
     def __hash__(self):
         return hash((self.date, self.title, self.status, self.book_title, self.subject))
+    
+    def __eq__(self, other):
+        return self.date == other.date and self.title == other.title and self.status == other.status and self.book_title == other.book_title and self.subject == other.subject
     
     @classmethod
     def from_dict(cls, data):

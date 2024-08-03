@@ -1,5 +1,6 @@
 from fastapi.responses import JSONResponse
-from Database.database import db
+from sqlalchemy import text
+from Database.database import db, get_db
 from Database.models import user
 from fastapi import APIRouter
 from Service import book_service
@@ -17,9 +18,12 @@ router = APIRouter()
 @router.post("/subject_register")
 async def subject_register(request: Request, subject_data: subject_register):
     try:
-        userid = AuthorizationService.verify_session(request)
+        db = get_db()
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        userid = AuthorizationService.verify_session(request, db)
         subject_data = subject_service.to_subject_db(subject_data, userid)
-        subject_service.create_subject(subject_data)
+        subject_service.create_subject(subject_data, db)
         return JSONResponse(status_code=201, content={"message": "Subject registered successfully"})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -35,6 +39,7 @@ async def subject_register(request: Request, subject_data: subject_register):
         return JSONResponse(status_code=500, content={"message": "Subject registration failed"})
     finally:
         db.commit()
+        db.close()
 
 #과목의 색을 변경할 수 있는 엔드 포인트 필요함.
 #과목끼리 색을 교환할 수 있는 엔드 포인트 필요함.
@@ -43,24 +48,30 @@ async def subject_register(request: Request, subject_data: subject_register):
 @router.get("/duplicate_subject")
 async def duplicate_subject(request: Request, subject: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        found_subject = subject_service.find_subject_by_name(subject, userid)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        found_subject = subject_service.find_subject_by_name(subject, userid, db)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})# modify?? : subject can be created
         return JSONResponse(status_code=409, content={"message": f"Subject '{subject}' already exists"})
     except:
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the subject"})
+    finally:
+        db.close()
 
 @router.delete("/delete_subject/{subject}")
 async def delete_subject(request: Request, subject: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        found_subject = subject_service.find_subject_by_name(subject, userid)
+        db = get_db()
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        userid = AuthorizationService.verify_session(request, db)
+        found_subject = subject_service.find_subject_by_name(subject, userid, db)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         if found_subject.userid != userid:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
-        subject_service.delete_subject(subject)
+        subject_service.delete_subject(subject, db)
         return JSONResponse(status_code=200, content={"message": "Subject deleted successfully"})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -72,12 +83,14 @@ async def delete_subject(request: Request, subject: str):
         return JSONResponse(status_code=500, content={"message": "Subject deletion failed"})
     finally:
         db.commit()
+        db.close()
 
 @router.get("/subject/{subject}") #이거 이름 수정하고 과목에 대한 엔드포인트로 변경
 async def get_subject(request: Request, subject: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        found_subject = subject_service.find_subject_by_name(subject, userid)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        found_subject = subject_service.find_subject_by_name(subject, userid, db)
         if found_subject == []:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         data = subject_service.to_subject_data(found_subject)
@@ -90,13 +103,16 @@ async def get_subject(request: Request, subject: str):
         print(e)
         return JSONResponse(status_code=500, content={"message": "Subject retrieval failed"})
     finally:
-        db.commit()
+        db.close()
 
 @router.post("/edit_subject/{subject}")
 async def edit_subject(request: Request, subject: str, new_subject: str):
     try:
-        userid = AuthorizationService.verify_session(request)
-        subject_service.edit_subject_name(subject, new_subject, userid)
+        db = get_db()
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        userid = AuthorizationService.verify_session(request, db)
+        subject_service.edit_subject_name(subject, new_subject, userid, db)
         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
     except SubjectNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": e.__str__()})
@@ -108,12 +124,14 @@ async def edit_subject(request: Request, subject: str, new_subject: str):
         return JSONResponse(status_code=500, content={"message": "Subject edit failed"})
     finally:
         db.commit()
+        db.close()
 
 @router.get("/subject_list")
 async def get_subject_list(request: Request):
     try:
-        userid = AuthorizationService.verify_session(request)
-        found_subject = subject_service.find_subject_by_userid(userid)
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        found_subject = subject_service.find_subject_by_userid(userid, db)
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
         data = {"userid": userid, "subjects": [subject_service.to_subject_data(subject).subject for subject in found_subject]}
@@ -127,3 +145,4 @@ async def get_subject_list(request: Request):
         return JSONResponse(status_code=500, content={"message": "Subject list retrieval failed"})
     finally:
         db.commit()
+        db.close()
