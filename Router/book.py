@@ -65,6 +65,25 @@ async def duplicate_subject(request: Request, booktitle: str):
 #추가: 서브젝트 검색 기능
 #추가: 이름 일부만으로도 검색할 수 있는 기능
 #해당 기능에서 현재 문제 발생
+
+@router.get("/book_subject/{booktitle}")
+async def book_subject(request: Request, booktitle: str):
+    try:
+        userid = AuthorizationService.verify_session(request)
+        if book_service.find_book_by_title(booktitle, userid).userid != userid:
+            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
+        book = book_service.find_book_by_title(booktitle, userid)
+        if book == None:
+            return JSONResponse(status_code=404, content={"message": "Book not found"})
+        return JSONResponse(status_code=200, content={"subject": book_service.to_book_data(book).__dict__["subject"]})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=500, content={"message": "There was some error while checking the book"})
+
 @router.get("/book/{booktitle}")
 async def book_info(request: Request, booktitle: str):
     try:
