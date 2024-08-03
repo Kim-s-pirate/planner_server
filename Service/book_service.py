@@ -56,15 +56,18 @@ class book_service:
     
     def get_initial(char):
         base_code = 0xAC00
-        # 유니코드 값
         unicode_value = ord(char)
 
         if '가' <= char <= '힣':
-            # 초성 인덱스 계산
             initial_index = (unicode_value - base_code) // (21 * 28)
-            # 초성 반환
             return INITIAL_LIST[initial_index]
-        elif 'a' <= char <= 'z' or 'A' <= char <= "Z":
+        elif 'a' <= char <= 'z' or 'A' <= char <= 'Z':
+            return char
+        elif '0' <= char <= '9':
+            return char
+        elif char == ' ':
+            return ''
+        else:
             return char
 
     def convert_text_to_initial(text):
