@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator, validator
 from typing import List, Optional, Set
 import re
 from datetime import date
@@ -47,6 +47,12 @@ class unit_time:
             return self.position >= other.position
         return self.hour >= other.hour
     
+    def from_string(cls, string):
+        return cls(string)
+    
+    def to_string(cls):
+        return str(cls)
+    
 class time_table_register(BaseModel):
     date: date
     subject: str
@@ -54,21 +60,34 @@ class time_table_register(BaseModel):
 
     def __hash__(self):
         return hash((self.date, self.subject, tuple(sorted(self.time))))
-
-    @validator('time', pre=True, each_item=True) #deprecated few days ago -> @field_validator
-    def time_validator(cls, v):
-        if isinstance(v, unit_time):
-            return v
-        pattern = re.compile(r'^(2[0-3]|1[0-9]|[0-9]):[0-5]$')
-        if not pattern.match(str(v)):
-            raise ValueError("Time must be in the format of 'hour:position'")
-        return unit_time(v)
+    
+    def __eq__(self, other):
+        return self.date == other.date and self.subject == other.subject and set(self.time) == set(other.time)
 
     class Config:
         arbitrary_types_allowed = True
 
-
+    @field_validator('time', mode='before')
+    def parse_time(cls, v):
+        if v is None:
+            return v
+        return [unit_time(item) if isinstance(item, str) else item for item in v]
     
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            date=data["date"],
+            subject=data["subject"],
+            time=list([unit_time(t) for t in data["time"]])
+        )
+    
+    def to_dict(self):
+        return {
+            "date": self.date,
+            "subject": self.subject,
+            "time": [str(t) for t in self.time]
+        }
+
 class time_table_data(BaseModel):
     date: date
     userid: str
@@ -77,6 +96,9 @@ class time_table_data(BaseModel):
 
     def __hash__(self):
         return hash((self.date, self.subject, tuple(sorted(self.time))))
+    
+    def __eq__(self, other):
+        return self.date == other.date and self.subject == other.subject and set(self.time) == set(other.time)
 
     class Config:
         arbitrary_types_allowed = True
@@ -95,3 +117,9 @@ class time_table_data(BaseModel):
             "subject": self.subject,
             "time": [str(t) for t in self.time]
         }
+    
+    @field_validator('time', mode='before')
+    def parse_time(cls, v):
+        if v is None:
+            return v
+        return [unit_time(item) if isinstance(item, str) else item for item in v]

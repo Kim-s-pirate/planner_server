@@ -1,5 +1,6 @@
 from fastapi.responses import JSONResponse
-from Database.database import db
+from sqlalchemy import text
+from Database.database import db, get_db
 from Data.user import *
 from Database.models import user
 from fastapi import APIRouter, Response
@@ -18,6 +19,7 @@ secret = os.getenv("secret")
 @router.post("/login")
 async def login(user_data: user_login, request: Request, response: Response):
     try:
+        db = get_db()
         session_id = AuthorizationService.get_session(request)
         if session_id:
             verify = AuthorizationService.check_session(request)
@@ -26,7 +28,7 @@ async def login(user_data: user_login, request: Request, response: Response):
             else:
                 pass #토큰은 있는데 유효하지 않은 경우
         #이미 토큰이 있는 경우에 대해서 더 처리가 필요함.
-        found_user = user_service.find_user_by_email(user_data.email)
+        found_user = user_service.find_user_by_email(user_data.email, db)
         if found_user == None:
             return JSONResponse(status_code=404, content={"message": "User not found"})
         if user_data.password != found_user.password:
@@ -43,11 +45,14 @@ async def login(user_data: user_login, request: Request, response: Response):
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while logging in the user"})
+    finally:
+        db.close()
 
 @router.get("/logout")
 async def logout(request: Request, response: Response):
     try:
-        session_id = AuthorizationService.verify_session(request)
+        db = get_db()
+        session_id = AuthorizationService.verify_session(request, db)
         AuthorizationService.delete_session(request)
         return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
     except SessionIdNotFoundError as e:
@@ -56,3 +61,5 @@ async def logout(request: Request, response: Response):
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})
+    finally:
+        db.close()

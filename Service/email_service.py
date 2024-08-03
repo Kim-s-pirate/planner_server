@@ -10,11 +10,11 @@ class email_service:
             code=code
         )
     
-    def find_verification_by_email(email: str):
+    def find_verification_by_email(email: str, db):
         return db.query(verification).filter(verification.email == email).first()
     
-    def register_verification(email: str, code: str):
-        found = email_service.find_verification_by_email(email)
+    def register_verification(email: str, code: str, db):
+        found = email_service.find_verification_by_email(email, db)
         if found is not None:
             found.code = code
             return True
@@ -26,7 +26,7 @@ class email_service:
     #     db.query(verification).filter(verification.created_at < now - timedelta(hours=3)).delete()
     #     db.commit()
 
-    def delete_expired_verification():
+    def delete_expired_verification(db):
         now = datetime.now()
         db.query(verification).filter(verification.time < now - timedelta(minutes=1)).delete()
         db.commit()

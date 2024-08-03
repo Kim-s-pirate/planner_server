@@ -64,14 +64,14 @@ class AuthorizationService:
         if session_id in AuthorizationService.session_id_list():
             return True
     
-    def verify_session(request: Request):
+    def verify_session(request: Request, db):
         session_id = request.cookies.get('session_id')
         if session_id is None:
             raise SessionIdNotFoundError
         if session_id not in AuthorizationService.session_id_list():
             raise SessionVerificationError
         session = AuthorizationService.session_db[session_id]
-        if user_service.find_user_by_userid(session['userid']) is None:
+        if user_service.find_user_by_userid(session['userid'], db) is None:
             del AuthorizationService.session_db[session_id]
             raise UserNotFoundError
         if session['created_at'] + timedelta(hours=3) < datetime.now(timezone.utc):

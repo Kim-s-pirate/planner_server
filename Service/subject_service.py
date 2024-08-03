@@ -27,31 +27,31 @@ class subject_service:
             color=subject_entity.color
         )
 
-    def find_subject_by_name(name: str, userid: str):
+    def find_subject_by_name(name: str, userid: str, db):
         return db.query(subject).filter(subject.subject == name, subject.userid == userid).first()
 
-    def create_subject(subject_entity: subject):
-        if subject_service.find_subject_by_name(subject_entity.subject, subject_entity.userid) != None:
+    def create_subject(subject_entity: subject, db):
+        if subject_service.find_subject_by_name(subject_entity.subject, subject_entity.userid, db) != None:
             raise SubjectAlreadyExistsError
         db.add(subject_entity)
 
-    def delete_subject(name: str):
+    def delete_subject(name: str, db):
         db.query(subject).filter(subject.subject == name).delete()
         db.commit()
 
-    def edit_subject_name(name: str, new_name: str, userid: str):
+    def edit_subject_name(name: str, new_name: str, userid: str, db):
         try:
-            found_subject = subject_service.find_subject_by_name(name, userid)
+            found_subject = subject_service.find_subject_by_name(name, userid, db)
             if found_subject == None:
                 raise SubjectNotFoundError
             found_subject.subject = new_name
         except Exception as e:
             raise e
         
-    def find_subject_by_userid(userid: str):
+    def find_subject_by_userid(userid: str, db):
         return db.query(subject).filter(subject.userid == userid).all()
 
-    def random_color(userid: str):
+    def random_color(userid: str, db):
         try:
             color_set = {'#21ACA9', '#34CDEF','#7475BB',
                 '#756C86','#ACB6B3','#B5E045',
@@ -60,7 +60,7 @@ class subject_service:
                 '#F8CA8F', '#EDED2A', '#FFD749',
                 '#809A79', '#C7DBF8', '#FF94E7',
                 '#FF9568', '#D7FFAF'}
-            used_color = set([subject.color for subject in subject_service.find_subject_by_userid(userid)])
+            used_color = set([subject.color for subject in subject_service.find_subject_by_userid(userid, db)])
             return random.choice(list(color_set - used_color))
         except Exception as e:
             raise e
