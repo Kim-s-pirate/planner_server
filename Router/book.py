@@ -92,7 +92,7 @@ async def book_info(request: Request, booktitle: str):
     try:
         db = get_db()
         userid = AuthorizationService.verify_session(request, db)
-        if book_service.find_book_by_title(booktitle, userid).userid != userid:
+        if book_service.find_book_by_title(booktitle, userid, db).userid != userid:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
         book = book_service.find_book_by_title(booktitle, userid, db)
         if book == None:
@@ -109,18 +109,33 @@ async def book_info(request: Request, booktitle: str):
         db.close()
 
 
-# 초성 검색 기능
-@router.get("/book_initial/{initial}")
-async def book_initial(request: Request, initial: str):
+# 통합 검색 기능
+@router.get("/book_search/{keyword}")
+async def book_search(request: Request, keyword: str):
     try:
         db = get_db()
         userid = AuthorizationService.verify_session(request, db)
-        books = book_service.find_book_by_initial(initial, userid, db)
+        books = book_service.find_book_by_partial_title(keyword, userid,db)
         book_list = []
         for book_entity in books:
             book_list.append(book_service.to_book_data(book_entity).__dict__)
+
+        books = book_service.find_book_by_initial(keyword, userid, db)
+        for book_entity in books:
+            book_list.append(book_service.to_book_data(book_entity).__dict__)
+
+        books = book_service.find_book_by_subject(keyword, userid, db)
+        for book_entity in books:
+            book_list.append(book_service.to_book_data(book_entity).__dict__)
+
+        unique_books = {}
+        for book in book_list:
+            unique_books[book['id']] = book
+
+        book_list = list(unique_books.values())
+
         return JSONResponse(status_code=200, content={"books": book_list})
-    
+
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=400, content={"message": "Token not found"})
     except SessionVerificationError as e:
@@ -128,8 +143,6 @@ async def book_initial(request: Request, initial: str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=409, content={"message": "There was some error while checking the book list"})
-    finally:
-        db.close()
 
 @router.get("/book_list")
 async def book_list(request: Request):

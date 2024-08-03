@@ -82,7 +82,7 @@ class book_service:
     def find_book_by_title(title: str, userid: str, db):
         return db.query(book).filter(book.title == title, book.userid == userid).first()
 
-    def find_book_by_partial_title(partial_title: str, userid: str):
+    def find_book_by_partial_title(partial_title: str, userid: str, db):
         search_pattern = f"%{partial_title}%"
         return db.query(book).filter(book.title.like(search_pattern), book.userid == userid).all()
 
