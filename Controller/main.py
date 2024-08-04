@@ -19,7 +19,7 @@ from Service.email_service import email_service
 import threading
 import schedule
 
-schedule.every(10).minutes.do(email_service.delete_expired_verification)
+schedule.every(10).minutes.do(lambda: email_service.delete_expired_verification(db))
 
 def run_scheduler():
     while True:

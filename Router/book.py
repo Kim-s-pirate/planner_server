@@ -1,6 +1,6 @@
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from Database.database import get_db
+from Database.database import get_db, rollback_to_savepoint
 from fastapi import APIRouter
 from starlette.status import *
 from jose import JWTError, jwt
@@ -10,6 +10,11 @@ from dotenv import load_dotenv
 from fastapi import Request
 from Data.book import *
 from Service.book_service import *
+
+class BookAlreadyExistsError(Exception):
+    def __init__(self):
+        self.message = "Book already exists"
+        super().__init__(self.message)
 
 router = APIRouter()
 load_dotenv("../.env")
@@ -25,18 +30,23 @@ async def book_register(request: Request, book_data: book_register):
         book_data = book_service.to_book_db(book_data, userid)
         result = book_service.create_book(book_data, db)
         if result == False:
-            return JSONResponse(status_code=302, content={"message": "Book already exists"})
+            raise BookAlreadyExistsError()
+        db.commit()
         return JSONResponse(status_code=201, content={"message": "Book registered successfully"})
+    except BookAlreadyExistsError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=302, content={"message": "Book already exists"})
     except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except Exception as e:
-        db.rollback()
+        rollback_to_savepoint(db)
         print(e)
         return JSONResponse(status_code=500, content={"message": "Book registration failed"})
     finally:
-        db.commit()
         db.close()
 
 
