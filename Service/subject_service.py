@@ -2,6 +2,14 @@ from Data.subject import *
 from Database.models import *
 from Database.database import db
 
+COLOR_SET = {'#21ACA9', '#34CDEF','#7475BB',
+                '#756C86','#ACB6B3','#B5E045',
+                '#BFA8EE', '#CB7D60','#E35BE5',
+                '#EE5444', '#EF5A68', '#F7969A',
+                '#F8CA8F', '#EDED2A', '#FFD749',
+                '#809A79', '#C7DBF8', '#FF94E7',
+                '#FF9568', '#D7FFAF'}
+
 class SubjectAlreadyExistsError(Exception):
     def __init__(self, message="Subject already exists."):
         self.message = message
@@ -51,16 +59,31 @@ class subject_service:
     def find_subject_by_userid(userid: str, db):
         return db.query(subject).filter(subject.userid == userid).all()
 
+    def find_color_by_subject(name: str, userid: str, db):
+        try:
+            return db.query(subject).filter(subject.subject == name, subject.userid == userid).first()["color"]
+        except Exception as e:
+            raise e
+
+    def remain_color(userid: str, db):
+        try:
+            used_color = set([subject.color for subject in subject_service.find_subject_by_userid(userid, db)])
+            return list(COLOR_SET - used_color)
+        except Exception as e:
+            raise e
+
     def random_color(userid: str, db):
         try:
-            color_set = {'#21ACA9', '#34CDEF','#7475BB',
-                '#756C86','#ACB6B3','#B5E045',
-                '#BFA8EE', '#CB7D60','#E35BE5',
-                '#EE5444', '#EF5A68', '#F7969A',
-                '#F8CA8F', '#EDED2A', '#FFD749',
-                '#809A79', '#C7DBF8', '#FF94E7',
-                '#FF9568', '#D7FFAF'}
             used_color = set([subject.color for subject in subject_service.find_subject_by_userid(userid, db)])
-            return random.choice(list(color_set - used_color))
+            return random.choice(list(COLOR_SET - used_color))
+        except Exception as e:
+            raise e
+
+    def edit_subject_color(name: str, userid: str, new_color: str, db):
+        try:
+            found_subject = subject_service.find_subject_by_name(name, userid, db)
+            if found_subject == None:
+                raise SubjectNotFoundError
+            found_subject.color = new_color
         except Exception as e:
             raise e
