@@ -172,6 +172,6 @@ class book_service:
             book.end_page = end_page
         except Exception as e:
             raise e
-        
-    def find_subject_by_book_name(name: str, userid: str, db):
-        return db.query(book).filter(book.title == name, book.userid == userid).first().subject
+
+    def find_subject_by_book_title(booktitle: str, userid: str, db):
+        return db.query(book).filter(book.title == booktitle, book.userid == userid).first().subject
