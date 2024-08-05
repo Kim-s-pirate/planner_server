@@ -87,3 +87,18 @@ class subject_service:
             found_subject.color = new_color
         except Exception as e:
             raise e
+
+    def find_subject_by_color(color: str, userid: str, db):
+        try:
+            return db.query(subject).filter(subject.color == color, subject.userid == userid).first()
+        except Exception as e:
+            raise e
+
+    def exchange_color(userid: str, subject: str, original_color: str, exchanged_color: str, db):
+        try:
+            found_subject = subject_service.find_subject_by_color(exchanged_color, userid, db)
+            found_subject.color = original_color
+            found_subject = subject_service.find_subject_by_name(subject, userid, db)
+            found_subject.color = exchanged_color
+        except Exception as e:
+            raise e

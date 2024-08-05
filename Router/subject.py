@@ -102,6 +102,25 @@ async def edit_color(request: Request, subject: str, new_color: str):
         db.commit()
         db.close()
 
+@router.post("/exchange_color/")
+async def exchange_color(request: Request, subject: str, original_color: str, exchanged_color: str):
+    try:
+        db = get_db()
+        userid = AuthorizationService.verify_session(request, db)
+        subject_service.exchange_color(userid, subject, original_color, exchanged_color, db)
+        return JSONResponse(status_code=200, content={"message": "Subject color exchanged successfully"})
+    except SubjectNotFoundError as e:
+        return JSONResponse(status_code=404, content={"message": e.__str__()})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Subject color edit failed"})
+    finally:
+        db.commit()
+        db.close()
+
 
 
 @router.delete("/delete_subject/{subject}")
