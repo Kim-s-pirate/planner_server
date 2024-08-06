@@ -3,10 +3,14 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Column, Index, Integer, Prima
 from sqlalchemy.orm import relationship
 from Database.database import Base, db, engine, get_db
 from datetime import datetime, timezone
+import hashlib
+
+def hash():
+    return hashlib.sha256(str(datetime.now()).encode()).hexdigest()
 
 class user(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), index=True, unique=True, nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), index=True, unique=True, nullable=False)
@@ -21,14 +25,14 @@ class user(Base):
 
 class log(Base):
     __tablename__ = "logs"
-    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), nullable=False)
     time = Column(Time, default=datetime.now, nullable=False)  # 현재 시간을 기본값으로 설정
     log = Column(String(150), nullable=False)
 
 class to_do(Base):
     __tablename__ = "to_do"
-    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
     date = Column(String(50), index=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     title = Column(String(50), nullable=False)
@@ -41,7 +45,7 @@ class to_do(Base):
 
 class book(Base):
     __tablename__ = "books"
-    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), index=True, nullable=False)
     title = Column(String(50), nullable=False, index=True)
     start_page = Column(Integer, nullable=False)
@@ -66,7 +70,7 @@ event.listen(book, 'before_insert', set_initial)
 
 class subject(Base):
     __tablename__ = "subjects"
-    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
     subject = Column(String(50), index=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     color = Column(String(7), nullable=False)
