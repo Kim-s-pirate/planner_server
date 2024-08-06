@@ -42,12 +42,13 @@ class AuthorizationService:
     def session_id_list():
         return AuthorizationService.session_db.keys()
 
-    def generate_session(userid: str):
+    def generate_session(userid: str, id: str):
         session_id = secrets.token_hex(16)
         while session_id in AuthorizationService.session_id_list():
             session_id = secrets.token_hex(16)
         AuthorizationService.session_db[session_id] = {
             'userid': userid,
+            'id': id,
             'created_at': datetime.now(timezone.utc)
         }
         return session_id
@@ -78,6 +79,7 @@ class AuthorizationService:
             del AuthorizationService.session_db[session_id]
             raise SessionExpiredError
         return session['userid']
+    #여기 부분도 userid를 주는게 아니라 원래 값을 반환하도록 해야함.
     
     def delete_session(request: Request):
         session_id = request.cookies.get('session_id')

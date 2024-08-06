@@ -145,7 +145,7 @@ class planner_service:
 
     def verify_planner(planner_data: planner_register, userid: str, db):
         for to_do in planner_data.to_do_list:
-            if to_do.subject != book_service.find_subject_by_book_name(to_do.book_title, userid, db):
+            if to_do.subject != book_service.find_subject_by_book_title(to_do.book_title, userid, db):
                 raise BookSubjectMismatchError
         time_set_list = [set(time_table.time) for time_table in planner_data.time_table_list]
         total = sum(len(s) for s in time_set_list)
