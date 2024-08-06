@@ -10,7 +10,7 @@ class book_register(BaseModel):
     subject: Optional[str] = None
 
 class book_data(BaseModel):
-    id: int
+    id: str
     userid: str
     title: str
     start_page: int
