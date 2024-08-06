@@ -19,3 +19,9 @@ class userid(BaseModel):
 class user_edit(BaseModel):
     userid: str
     username: str
+
+class user_data(BaseModel):
+    id: str
+    userid: str
+    username: str
+    email: str

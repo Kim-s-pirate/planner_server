@@ -35,7 +35,7 @@ async def login(user_data: user_login, request: Request, response: Response):
             return JSONResponse(status_code=423, content={"message": "User login failed"})
         #여기에 들어가는 401코드는 변경되어야 함. 현재 토큰 처리에서 401을 사용하고 있기 때문에 401을 사용하면 토큰 처리로 인식됨.
 
-        session_id = AuthorizationService.generate_session(found_user.userid)
+        session_id = AuthorizationService.generate_session(found_user.userid, found_user.id)
         response = JSONResponse(
             status_code=200, 
             content={"message": "User logged in successfully"}

@@ -5,12 +5,12 @@ from Database.database import Base, db, engine, get_db
 from datetime import datetime, timezone
 import hashlib
 
-def hash():
+def hash_id():
     return hashlib.sha256(str(datetime.now()).encode()).hexdigest()
 
 class user(Base):
     __tablename__ = "users"
-    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), index=True, unique=True, nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), index=True, unique=True, nullable=False)
@@ -22,17 +22,19 @@ class user(Base):
     planner = relationship("planner", back_populates="user", cascade="all, delete, save-update")
     time_table = relationship("time_table", back_populates="user", cascade="all, delete, save-update")
     to_do = relationship("to_do", back_populates="user", cascade="all, delete, save-update")
+    #내가 보기엔 굳이 userid랑 FK로 연결할 필요가 없어보임. 그냥 id로 연결해도 될듯
+    #하지만 userid를 항상 쿼리해야해서 시간 복잡도가 올라갈 수도 있어서 user를 제외한 참조들을 id를 쓰는 것이 좋아보임
 
 class log(Base):
     __tablename__ = "logs"
-    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), nullable=False)
     time = Column(Time, default=datetime.now, nullable=False)  # 현재 시간을 기본값으로 설정
     log = Column(String(150), nullable=False)
 
 class to_do(Base):
     __tablename__ = "to_do"
-    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
     date = Column(String(50), index=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     title = Column(String(50), nullable=False)
@@ -45,7 +47,7 @@ class to_do(Base):
 
 class book(Base):
     __tablename__ = "books"
-    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), index=True, nullable=False)
     title = Column(String(50), nullable=False, index=True)
     start_page = Column(Integer, nullable=False)
@@ -70,7 +72,7 @@ event.listen(book, 'before_insert', set_initial)
 
 class subject(Base):
     __tablename__ = "subjects"
-    id = Column(String(100), default=hash, primary_key=True, index=True, unique=True, nullable=False)
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
     subject = Column(String(50), index=True, nullable=False)
     userid = Column(String(50), ForeignKey('users.userid', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     color = Column(String(7), nullable=False)
