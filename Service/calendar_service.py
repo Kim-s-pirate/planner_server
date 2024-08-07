@@ -12,13 +12,16 @@ import json
 class calendar_service:
     @staticmethod
     def to_schedule_db(schedule_data: day_schedule_register, userid: str) -> schedule:
-        task_list_json = json.dumps([t.to_dict() for t in schedule_data.task_list])
+        try:
+            task_list_json = json.dumps([t.to_dict() for t in schedule_data.task_list])
 
-        return schedule(
-            userid=userid,
-            date=schedule_data.date,
-            task_list=task_list_json
-        )
+            return schedule(
+                userid=userid,
+                date=schedule_data.date,
+                task_list=task_list_json
+            )
+        except Exception as e:
+            raise e
 
     @staticmethod
     def to_schedule_data(schedule_entity: schedule):
@@ -48,19 +51,14 @@ class calendar_service:
 
     @staticmethod
     def delete_schedule(date: date, userid: str, db):
-        try:
-            existing_schedule = db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
-            if existing_schedule:
-                db.delete(existing_schedule)
-                db.commit()
-        except Exception as e:
-            db.rollback()
-            raise e
+        existing_schedule = db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
+        if existing_schedule:
+            db.delete(existing_schedule)
 
     @staticmethod
     def register_schedule(schedule_data: day_schedule, db):
         try:
-            existing_schedule = calendar_service.find_schedule_by_date(schedule_data.date, schedule_data.userid)
+            existing_schedule = calendar_service.find_schedule_by_date(schedule_data.date, schedule_data.userid, db)
             if existing_schedule:
                 db.delete(existing_schedule)
                 db.commit()

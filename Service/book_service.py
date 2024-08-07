@@ -9,25 +9,36 @@ INITIAL_LIST = [
     "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
 ]
 
+
+class BookAlreadyExistsError(Exception):
+    def __init__(self):
+        self.message = "Book already exists"
+        super().__init__(self.message)
+
+
 class DuplicateBookError(Exception):
     def __init__(self, message="This book already exists."):
         self.message = message
         super().__init__(self.message)
+
 
 class DuplicateBookTitleError(Exception):
     def __init__(self, message="This book already exists."):
         self.message = message
         super().__init__(self.message)
 
+
 class BookNotFoundError(Exception):
     def __init__(self, message="Book not found."):
         self.message = message
         super().__init__(self.message)
 
+
 class PageError(Exception):
     def __init__(self, message="Start page cannot be greater than end page."):
         self.message = message
         super().__init__(self.message)
+
 
 class book_service:
     def to_book_db(book_register: book_register, userid: str):
@@ -43,7 +54,7 @@ class book_service:
 
     def to_book_data(book_entity: book):
         return book_data(
-            id = book_entity.id,
+            id=book_entity.id,
             userid=book_entity.userid,
             title=book_entity.title,
             start_page=book_entity.start_page,
@@ -53,7 +64,7 @@ class book_service:
             subject=book_entity.subject,
             initial=book_entity.initial
         )
-    
+
     def get_initial(char):
         base_code = 0xAC00
         unicode_value = ord(char)
@@ -72,7 +83,7 @@ class book_service:
 
     def convert_text_to_initial(text):
         return ''.join(book_service.get_initial(char) or '' for char in text)
-    
+
     def duplicate_book(title: str, userid: str, db):
         if db.query(book).filter(book.title == title, book.userid == userid).first() is not None:
             return True
@@ -88,12 +99,15 @@ class book_service:
 
     def find_book_by_id(id: int, db):
         return db.query(book).filter(book.id == id).first()
-    
+
     def find_book_by_subject(subject: str, userid: str, db):
         return db.query(book).filter(book.subject == subject, book.userid == userid).all()
 
     def find_book_by_initial(initial: str, userid: str, db):
         return db.query(book).filter(book.initial.like(f"%{initial}%"), book.userid == userid).all()
+
+    def find_book_by_status(status: bool, userid: str, db):
+        return db.query(book).filter(book.status == status, book.userid == userid).all()
 
     def create_book(book: book, db):
         found = book_service.find_book_by_title(book.title, book.userid, db)
@@ -109,7 +123,7 @@ class book_service:
 
     def edit_book_by_title(book_data: book_edit, userid: str, title: str, db):
         try:
-            book = book_service.find_book_by_title(title, userid)
+            book = book_service.find_book_by_title(title, userid, db)
             if book == None:
                 raise BookNotFoundError
             if book_data.title != book.title:
@@ -124,7 +138,7 @@ class book_service:
                 book_service.edit_book_subject(title, book_data.subject, userid, db)
         except Exception as e:
             raise e
-        
+
     def edit_book_by_id(book_data: book_edit, userid: str, id: int, db):
         try:
             book = book_service.find_book_by_id(id, db)
@@ -132,7 +146,8 @@ class book_service:
                 raise BookNotFoundError
             if book.title != book_data.title and book_service.duplicate_book(book_data.title, userid, db):
                 raise DuplicateBookTitleError
-            if book.subject != book_data.subject and (found_subject := subject_service.find_subject_by_name(book_data.subject, userid, db)) == None:
+            if book.subject != book_data.subject and (
+            found_subject := subject_service.find_subject_by_name(book_data.subject, userid, db)) == None:
                 raise SubjectNotFoundError
             book.title = book_data.title
             book.subject = book_data.subject
@@ -142,7 +157,7 @@ class book_service:
             book.status = book_data.status
         except Exception as e:
             raise e
-        
+
     def edit_book_subject(title: str, new_subject: str, userid: str, db):
         try:
             found_subject = subject_service.find_subject_by_name(new_subject, userid, db)
@@ -154,7 +169,7 @@ class book_service:
             book.subject = new_subject
         except Exception as e:
             raise e
-        
+
     def edit_book_subject_by_id(id: str, new_subject: str, userid: str, db):
         try:
             found_subject = subject_service.find_subject_by_name(new_subject, userid, db)
@@ -166,7 +181,7 @@ class book_service:
             book.subject = new_subject
         except Exception as e:
             raise e
-        
+
     def edit_book_title(title: str, new_title: str, userid: str, db):
         try:
             if book_service.duplicate_book(new_title, userid, db):
@@ -175,7 +190,7 @@ class book_service:
             book.title = new_title
         except Exception as e:
             raise e
-        
+
     def edit_book_title_by_id(id: str, new_title: str, userid: str, db):
         try:
             if book_service.duplicate_book(new_title, userid, db):
@@ -184,7 +199,7 @@ class book_service:
             book.title = new_title
         except Exception as e:
             raise e
-        
+
     # def edit_book_status(title: str, status: bool, userid: str, db):
     #     try:
     #         book = book_service.find_book_by_title(title, userid, db)
@@ -193,7 +208,7 @@ class book_service:
     #         book.status = status
     #     except Exception as e:
     #         raise e
-    
+
     # def edit_book_memo(title: str, memo: str, userid: str, db):
     #     try:
     #         book = book_service.find_book_by_title(title, userid, db)
@@ -202,7 +217,7 @@ class book_service:
     #         book.memo = memo
     #     except Exception as e:
     #         raise e
-    
+
     # def edit_book_page(title: str, start_page: int, end_page: int, userid: str, db):
     #     try:
     #         book = book_service.find_book_by_title(title, userid, db)
@@ -214,13 +229,12 @@ class book_service:
     #         book.end_page = end_page
     #     except Exception as e:
     #         raise e
-    
+
     def find_subject_by_book_title(booktitle: str, userid: str, db):
         return db.query(book).filter(book.title == booktitle, book.userid == userid).first().subject
-    
+
     def find_subject_by_book_id(id: str, db):
         return db.query(book).filter(book.id == id).first().subject
-    
+
     def find_book_by_subject(subject: str, userid: str, db):
         return db.query(book).filter(book.subject == subject, book.userid == userid).all()
-    
