@@ -25,3 +25,6 @@ class user_data(BaseModel):
     userid: str
     username: str
     email: str
+
+class user_password(BaseModel):
+    password: str

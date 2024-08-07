@@ -2,6 +2,8 @@ from Data.subject import *
 from Database.models import *
 from Database.database import db
 
+# id
+
 COLOR_SET = {'#21ACA9', '#34CDEF', '#7475BB',
              '#756C86', '#ACB6B3', '#B5E045',
              '#BFA8EE', '#CB7D60', '#E35BE5',
@@ -24,16 +26,16 @@ class SubjectNotFoundError(Exception):
 
 
 class subject_service:
-    def to_subject_db(subject_register: subject_register, userid: str):
+    def to_subject_db(subject_register: subject_register, user_id: str):
         return subject(
-            userid=userid,
+            user_id=user_id,
             subject=subject_register.subject,
         )
 
     def to_subject_data(subject_entity: subject):
         return subject_data(
             id=subject_entity.id,
-            userid=subject_entity.userid,
+            user_id=subject_entity.user_id,
             subject=subject_entity.subject,
             color=subject_entity.color
         )
@@ -41,30 +43,30 @@ class subject_service:
     def find_subject_by_id(id: str, db):
         return db.query(subject).filter(subject.id == id).first()
 
-    def find_subject_by_name(name: str, userid: str, db):
-        return db.query(subject).filter(subject.subject == name, subject.userid == userid).first()
+    def find_subject_by_name(name: str, user_id: str, db):
+        return db.query(subject).filter(subject.subject == name, subject.user_id == user_id).first()
 
     def create_subject(subject_entity: subject, db):
-        if subject_service.find_subject_by_name(subject_entity.subject, subject_entity.userid, db) != None:
+        if subject_service.find_subject_by_name(subject_entity.subject, subject_entity.user_id, db) != None:
             raise SubjectAlreadyExistsError
         db.add(subject_entity)
 
-    def delete_subject_by_name(name: str, userid: str, db):
-        db.query(subject).filter(subject.subject == name, subject.userid == userid).delete()
+    def delete_subject_by_name(name: str, user_id: str, db):
+        db.query(subject).filter(subject.subject == name, subject.user_id == user_id).delete()
 
     def delete_subject_by_id(id: str, db):
         db.query(subject).filter(subject.id == id).delete()
 
-    def edit_subject_name_by_name(name: str, new_name: str, userid: str, db):
+    def edit_subject_name_by_name(name: str, new_name: str, user_id: str, db):
         try:
-            found_subject = subject_service.find_subject_by_name(name, userid, db)
+            found_subject = subject_service.find_subject_by_name(name, user_id, db)
             if found_subject == None:
                 raise SubjectNotFoundError
             found_subject.subject = new_name
         except Exception as e:
             raise e
 
-    def edit_subject_name_by_id(id: str, new_name: str, userid: str, db):
+    def edit_subject_name_by_id(id: str, new_name: str, user_id: str, db):
         try:
             found_subject = subject_service.find_subject_by_id(id, db)
             if found_subject == None:
@@ -73,41 +75,41 @@ class subject_service:
         except Exception as e:
             raise e
 
-    def find_subject_by_userid(userid: str, db):
-        return db.query(subject).filter(subject.userid == userid).all()
+    def find_subject_by_user_id(user_id: str, db):
+        return db.query(subject).filter(subject.user_id == user_id).all()
 
-    def random_color(userid: str, db):
+    def random_color(user_id: str, db):
         try:
-            used_color = set([subject.color for subject in subject_service.find_subject_by_userid(userid, db)])
+            used_color = set([subject.color for subject in subject_service.find_subject_by_user_id(user_id, db)])
             return random.choice(list(COLOR_SET - used_color))
         except Exception as e:
             raise e
 
-    def remain_color(userid: str, db):
+    def remain_color(user_id: str, db):
         try:
-            used_color = set([subject.color for subject in subject_service.find_subject_by_userid(userid, db)])
+            used_color = set([subject.color for subject in subject_service.find_subject_by_user_id(user_id, db)])
             return list(COLOR_SET - used_color)
         except Exception as e:
             raise e
 
-    def find_subject_by_color(color: str, userid: str, db):
+    def find_subject_by_color(color: str, user_id: str, db):
         try:
-            return db.query(subject).filter(subject.color == color, subject.userid == userid).first()
+            return db.query(subject).filter(subject.color == color, subject.user_id == user_id).first()
         except Exception as e:
             raise e
 
-    def exchange_color(userid: str, subject: str, original_color: str, exchanged_color: str, db):
+    def exchange_color(user_id: str, subject: str, original_color: str, exchanged_color: str, db):
         try:
-            found_subject = subject_service.find_subject_by_color(exchanged_color, userid, db)
+            found_subject = subject_service.find_subject_by_color(exchanged_color, user_id, db)
             found_subject.color = original_color
-            found_subject = subject_service.find_subject_by_name(subject, userid, db)
+            found_subject = subject_service.find_subject_by_name(subject, user_id, db)
             found_subject.color = exchanged_color
         except Exception as e:
             raise
 
-    def edit_subject_color(name: str, userid: str, new_color: str, db):
+    def edit_subject_color(name: str, user_id: str, new_color: str, db):
         try:
-            found_subject = subject_service.find_subject_by_name(name, userid, db)
+            found_subject = subject_service.find_subject_by_name(name, user_id, db)
             if found_subject == None:
                 raise SubjectNotFoundError
             found_subject.color = new_color

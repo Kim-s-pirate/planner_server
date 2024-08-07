@@ -6,6 +6,8 @@ from Service.authorization_service import *
 from datetime import datetime, timezone, timedelta
 from Service.user_service import *
 
+# id
+
 # class TokenNotFoundError(Exception):
 #     def __init__(self):
 #         self.message = "Token not found"
@@ -72,13 +74,13 @@ class AuthorizationService:
         if session_id not in AuthorizationService.session_id_list():
             raise SessionVerificationError
         session = AuthorizationService.session_db[session_id]
-        if user_service.find_user_by_userid(session['userid'], db) is None:
+        if user_service.find_user_by_id(session['id'], db) is None:
             del AuthorizationService.session_db[session_id]
             raise UserNotFoundError
         if session['created_at'] + timedelta(hours=3) < datetime.now(timezone.utc):
             del AuthorizationService.session_db[session_id]
             raise SessionExpiredError
-        return session['userid']
+        return session
     #여기 부분도 userid를 주는게 아니라 원래 값을 반환하도록 해야함.
     
     def delete_session(request: Request):
