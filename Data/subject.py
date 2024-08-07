@@ -6,6 +6,6 @@ class subject_register(BaseModel):
 
 class subject_data(BaseModel):
     id: str
-    userid: str
+    user_id: str
     subject: str
     color: str

@@ -11,12 +11,12 @@ import json
 
 class calendar_service:
     @staticmethod
-    def to_schedule_db(schedule_data: day_schedule_register, userid: str) -> schedule:
+    def to_schedule_db(schedule_data: day_schedule_register, user_id: str) -> schedule:
         try:
             task_list_json = json.dumps([t.to_dict() for t in schedule_data.task_list])
 
             return schedule(
-                userid=userid,
+                user_id=user_id,
                 date=schedule_data.date,
                 task_list=task_list_json
             )
@@ -28,7 +28,7 @@ class calendar_service:
         task_list = [task.from_dict(t) for t in json.loads(schedule_entity.task_list)]
 
         return day_schedule(
-            userid=schedule_entity.userid,
+            user_id=schedule_entity.user_id,
             date=schedule_entity.date,
             task_list=task_list
         )
@@ -36,7 +36,7 @@ class calendar_service:
     @staticmethod
     def schedule_to_dict(schedule_data: day_schedule) -> dict:
         return {
-            "userid": schedule_data.userid,
+            "user_id": schedule_data.user_id,
             "date": schedule_data.date.isoformat(),
             "task_list": [task.to_dict(t) for t in schedule_data.task_list]
         }
@@ -46,19 +46,19 @@ class calendar_service:
         return task_register.to_dict()
 
     @staticmethod
-    def find_schedule_by_date(date: date, userid: str, db) -> schedule:
-        return db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
+    def find_schedule_by_date(date: date, user_id: str, db) -> schedule:
+        return db.query(schedule).filter(schedule.date == date, schedule.user_id == user_id).first()
 
     @staticmethod
-    def delete_schedule(date: date, userid: str, db):
-        existing_schedule = db.query(schedule).filter(schedule.date == date, schedule.userid == userid).first()
+    def delete_schedule(date: date, user_id: str, db):
+        existing_schedule = db.query(schedule).filter(schedule.date == date, schedule.user_id == user_id).first()
         if existing_schedule:
             db.delete(existing_schedule)
 
     @staticmethod
     def register_schedule(schedule_data: day_schedule, db):
         try:
-            existing_schedule = calendar_service.find_schedule_by_date(schedule_data.date, schedule_data.userid, db)
+            existing_schedule = calendar_service.find_schedule_by_date(schedule_data.date, schedule_data.user_id, db)
             if existing_schedule:
                 db.delete(existing_schedule)
                 db.commit()
@@ -72,7 +72,7 @@ class calendar_service:
                 day_schedule_register(
                     task_list=task_list,
                     date=schedule_data.date
-                ), schedule_data.userid
+                ), schedule_data.user_id
             )
             db.add(new_schedule)
             db.commit()
@@ -81,18 +81,18 @@ class calendar_service:
             raise e
 
     @staticmethod
-    def get_month_schedule(year: str, month: str, userid: str, db) -> list:
+    def get_month_schedule(year: str, month: str, user_id: str, db) -> list:
         results = db.query(schedule).filter(
             extract('year', schedule.date) == year,
             extract('month', schedule.date) == month,
-            schedule.userid == userid
+            schedule.user_id == user_id
         ).all()
 
         formatted_results = []
         for result in results:
             formatted_result = schedule(
                 date=date_service.get_date(result.date),
-                userid=result.userid,
+                user_id=result.user_id,
                 task_list=result.task_list,
             )
             formatted_results.append(formatted_result)
@@ -100,13 +100,13 @@ class calendar_service:
         return formatted_results
 
     @staticmethod
-    def to_calendar_goal_db(goal_data: calendar_goal_register, userid: str) -> goal:
+    def to_calendar_goal_db(goal_data: calendar_goal_register, user_id: str) -> goal:
         return goal(
             year=goal_data.year,
             month=goal_data.month,
             month_goal=goal_data.month_goal,
             week_goal=goal_data.week_goal,
-            userid=userid
+            user_id=user_id
         )
 
     @staticmethod
@@ -116,26 +116,26 @@ class calendar_service:
             month=goal_entity.month,
             month_goal=goal_entity.month_goal,
             week_goal=goal_entity.week_goal,
-            userid=goal_entity.userid
+            user_id=goal_entity.user_id
         )
 
     @staticmethod
-    def find_goal(year: int, month: int, userid: str, db) -> goal:
+    def find_goal(year: int, month: int, user_id: str, db) -> goal:
         return db.query(goal).filter(
             goal.year == year,
             goal.month == month,
-            goal.userid == userid
+            goal.user_id == user_id
         ).first()
 
     @staticmethod
-    def register_goal(goal_data: calendar_goal_register, userid: str, db):
+    def register_goal(goal_data: calendar_goal_register, user_id: str, db):
         try:
-            existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, userid, db)
+            existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, user_id, db)
             if existing_goal:
                 existing_goal.month_goal = goal_data.month_goal
                 existing_goal.week_goal = goal_data.week_goal
             else:
-                new_goal = calendar_service.to_calendar_goal_db(goal_data, userid)
+                new_goal = calendar_service.to_calendar_goal_db(goal_data, user_id)
                 db.add(new_goal)
             db.commit()
         except Exception as e:
@@ -143,12 +143,12 @@ class calendar_service:
             raise e
 
     @staticmethod
-    def delete_goal(year: int, month: int, userid: str, db):
+    def delete_goal(year: int, month: int, user_id: str, db):
         try:
             db.query(goal).filter(
                 goal.year == year,
                 goal.month == month,
-                goal.userid == userid
+                goal.user_id == user_id
             ).delete()
             db.commit()
         except Exception as e:

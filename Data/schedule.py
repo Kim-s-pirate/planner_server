@@ -9,5 +9,5 @@ class day_schedule_register(BaseModel):
 
 class day_schedule(BaseModel):
     task_list: List['task'] = []
-    userid: str
+    user_id: str
     date: date

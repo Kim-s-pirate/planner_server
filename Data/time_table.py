@@ -55,14 +55,14 @@ class unit_time:
     
 class time_table_register(BaseModel):
     date: date
-    subject: str
+    subject_id: str
     time: Optional[List[unit_time]] = []
 
     def __hash__(self):
-        return hash((self.date, self.subject, tuple(sorted(self.time))))
+        return hash((self.date, self.subject_id, tuple(sorted(self.time))))
     
     def __eq__(self, other):
-        return self.date == other.date and self.subject == other.subject and set(self.time) == set(other.time)
+        return self.date == other.date and self.subject_id == other.subject_id and set(self.time) == set(other.time)
 
     class Config:
         arbitrary_types_allowed = True
@@ -77,28 +77,28 @@ class time_table_register(BaseModel):
     def from_dict(cls, data):
         return cls(
             date=data["date"],
-            subject=data["subject"],
+            subject_id=data["subject_id"],
             time=list([unit_time(t) for t in data["time"]])
         )
     
     def to_dict(self):
         return {
             "date": self.date,
-            "subject": self.subject,
+            "subject_id": self.subject_id,
             "time": [str(t) for t in self.time]
         }
 
 class time_table_data(BaseModel):
     date: date
     userid: str
-    subject: str
+    subject_id: str
     time: Optional[List[unit_time]] = []
 
     def __hash__(self):
-        return hash((self.date, self.subject, tuple(sorted(self.time))))
+        return hash((self.date, self.subject_id, tuple(sorted(self.time))))
     
     def __eq__(self, other):
-        return self.date == other.date and self.subject == other.subject and set(self.time) == set(other.time)
+        return self.date == other.date and self.subject_id == other.subject_id and set(self.time) == set(other.time)
 
     class Config:
         arbitrary_types_allowed = True
@@ -107,14 +107,14 @@ class time_table_data(BaseModel):
     def from_dict(cls, data):
         return cls(
             date=data["date"],
-            subject=data["subject"],
+            subject_id=data["subject_id"],
             time=list([unit_time(t) for t in data["time"]])
         )
     
     def to_dict(self):
         return {
             "date": self.date,
-            "subject": self.subject,
+            "subject_id": self.subject_id,
             "time": [str(t) for t in self.time]
         }
     

@@ -22,9 +22,9 @@ async def subject_register(request: Request, subject_data: subject_register):
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
-        subject_data = subject_service.to_subject_db(subject_data, userid)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        subject_data = subject_service.to_subject_db(subject_data, user_id)
 
         subject_service.create_subject(subject_data, db)
 
@@ -59,9 +59,9 @@ async def subject_register(request: Request, subject_data: subject_register):
 async def duplicate_subject(request: Request, subject: str):
     db = get_db()
     try:
-        userid = AuthorizationService.verify_session(request, db)
-
-        found_subject = subject_service.find_subject_by_name(subject, userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        found_subject = subject_service.find_subject_by_name(subject, user_id, db)
 
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
@@ -78,9 +78,9 @@ async def duplicate_subject(request: Request, subject: str):
 async def get_subject_by_name(request: Request, subject: str):
     db = get_db()
     try:
-        userid = AuthorizationService.verify_session(request, db)
-
-        found_subject = subject_service.find_subject_by_name(subject, userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        found_subject = subject_service.find_subject_by_name(subject, user_id, db)
 
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
@@ -132,9 +132,9 @@ async def get_subject_by_id(request: Request, subject_id: str):
 async def subject_color(request: Request, subject: str):
     db = get_db()
     try:
-        userid = AuthorizationService.verify_session(request, db)
-
-        found_color = subject_service.find_subject_by_name(subject, userid, db)["color"]
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        found_color = subject_service.find_subject_by_name(subject, user_id, db)["color"]
 
         return JSONResponse(status_code=200, content={"color": found_color})
 
@@ -148,9 +148,9 @@ async def subject_color(request: Request, subject: str):
 async def remain_color(request: Request):
     db = get_db()
     try:
-        userid = AuthorizationService.verify_session(request, db)
-
-        remain_color = subject_service.remain_color(userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        remain_color = subject_service.remain_color(user_id, db)
 
         return JSONResponse(status_code=200, content={"remain color": remain_color})
 
@@ -164,9 +164,9 @@ async def remain_color(request: Request):
 async def get_subject_list(request: Request):
     db = get_db()
     try:
-        userid = AuthorizationService.verify_session(request, db)
-
-        found_subject = subject_service.find_subject_by_userid(userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        found_subject = subject_service.find_subject_by_userid(user_id, db)
 
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
@@ -194,9 +194,9 @@ async def edit_subject_name_by_name(request: Request, subject: str, new_subject:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
-        subject_service.edit_subject_name_by_name(subject, new_subject, userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        subject_service.edit_subject_name_by_name(subject, new_subject, user_id, db)
 
         db.commit()
 
@@ -228,9 +228,9 @@ async def edit_subject_name_by_id(request: Request, subject_id: str, new_subject
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
-        subject_service.edit_subject_name_by_id(subject_id, new_subject, userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        subject_service.edit_subject_name_by_id(subject_id, new_subject, user_id, db)
 
         db.commit()
 
@@ -262,9 +262,9 @@ async def exchange_color(request: Request, subject: str, original_color: str, ex
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
-        subject_service.exchange_color(userid, subject, original_color, exchanged_color, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        subject_service.exchange_color(user_id, subject, original_color, exchanged_color, db)
 
         db.commit()
 
@@ -296,9 +296,9 @@ async def edit_color(request: Request, subject: str, new_color: str):
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
-        subject_service.edit_subject_color(subject, userid, new_color, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        subject_service.edit_subject_color(subject, user_id, new_color, db)
 
         db.commit()
 
@@ -330,17 +330,17 @@ async def delete_subject_by_name(request: Request, subject: str):
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
-        found_subject = subject_service.find_subject_by_name(subject, userid, db)
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        found_subject = subject_service.find_subject_by_name(subject, user_id, db)
 
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
 
-        if found_subject.userid != userid:
+        if found_subject.user_id != user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
 
-        subject_service.delete_subject_by_name(subject, userid, db)
+        subject_service.delete_subject_by_name(subject, user_id, db)
 
         db.commit()
 
@@ -368,14 +368,14 @@ async def delete_subject_by_id(request: Request, subject_id: str):
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
 
-        userid = AuthorizationService.verify_session(request, db)
-
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
         found_subject = subject_service.find_subject_by_id(subject_id, db)
 
         if found_subject == None:
             return JSONResponse(status_code=404, content={"message": "Subject not found"})
 
-        if found_subject.userid != userid:
+        if found_subject.user_id != user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
 
         subject_service.delete_subject_by_id(subject_id, db)
