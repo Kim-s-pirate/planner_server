@@ -12,25 +12,40 @@ COLOR_SET = {'#21ACA9', '#34CDEF', '#7475BB',
              '#809A79', '#C7DBF8', '#FF94E7',
              '#FF9568', '#D7FFAF'}
 
+class SubjectNotFoundError(Exception):
+    def __init__(self, message="Subject not found."):
+        self.message = message
+        super().__init__(self.message)
 
 class SubjectAlreadyExistsError(Exception):
     def __init__(self, message="Subject already exists."):
         self.message = message
         super().__init__(self.message)
 
-
-class SubjectNotFoundError(Exception):
-    def __init__(self, message="Subject not found."):
+class InvalidSubjectDataError(Exception):
+    def __init__(self, message="Invalid subject data."):
         self.message = message
         super().__init__(self.message)
 
+class DatabaseCommitError(Exception):
+    def __init__(self, message="Database commit error occurred."):
+        self.message = message
+        super().__init__(self.message)
+
+class SubjectUpdateError(Exception):
+    def __init__(self, message="Failed to update subject."):
+        self.message = message
+        super().__init__(self.message)
 
 class subject_service:
     def to_subject_db(subject_register: subject_register, user_id: str):
-        return subject(
-            user_id=user_id,
-            subject=subject_register.subject,
-        )
+        try:
+            subject_db = subject()
+            subject_db.user_id = user_id,
+            subject_db.subject = subject_register.subject
+            return subject_db
+        except:
+            raise InvalidSubjectDataError
 
     def to_subject_data(subject_entity: subject):
         return subject_data(
