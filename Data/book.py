@@ -21,7 +21,6 @@ class book_data(BaseModel):
     initial: Optional[str] = None
 
 class book_edit(BaseModel):
-    id: str
     title: str
     start_page: int
     end_page: int

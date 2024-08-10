@@ -39,7 +39,7 @@ async def subject_register(request: Request, subject_data: subject_register):
     finally:
         db.close()
 
-@router.get("/check_title_exists")
+@router.get("/check_title_exists/{title}")
 async def check_title_exists(request: Request, title: str):
     db = get_db()
     try:
@@ -63,7 +63,7 @@ async def check_title_exists(request: Request, title: str):
 async def get_subject_by_id(request: Request, id: str):
     db = get_db()
     try:
-        requester_id = AuthorizationService.verify_session(request, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_subject = subject_service.find_subject_by_id(id, db)
         if requester_id != found_subject.user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
@@ -125,15 +125,15 @@ async def get_subject_list(request: Request):
     finally:
         db.close()
 
-@router.get("/subject_color")
+@router.get("/subject_color/{id}")
 async def subject_color(request: Request, id: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)
-        if requester_id != subject_service.find_subject_by_id(id, db).user_id:
+        found_subject = subject_service.find_subject_by_id(id, db)
+        if requester_id != found_subject.user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
-        found_color = subject_service.find_subject_by_id(id, db)["color"]
-        return JSONResponse(status_code=200, content={"message": found_color})
+        return JSONResponse(status_code=200, content={"message": found_subject.color})
     except SessionIdNotFoundError:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError:
