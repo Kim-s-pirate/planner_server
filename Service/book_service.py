@@ -21,11 +21,6 @@ class BookAlreadyExistsError(Exception):
         self.message = message
         super().__init__(self.message)
 
-class DuplicateBookTitleError(Exception):
-    def __init__(self, message="This book already exists"):
-        self.message = message
-        super().__init__(self.message)
-
 class InvalidBookDataError(Exception):
     def __init__(self, message="Invalid book data"):
         self.message = message

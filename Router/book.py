@@ -13,8 +13,8 @@ from Service.book_service import *
 
 router = APIRouter()
 
-@router.post("/book_register")
-async def book_register(request: Request, book_data: book_register):
+@router.post("/register_book")
+async def register_book(request: Request, book_data: book_register):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -74,7 +74,7 @@ async def get_book_by_id(request: Request, id: str):
         found_book['subject'] = subject
         del found_book['subject_id']
         del found_book['user_id']
-        return JSONResponse(status_code=200, content={"message": book})
+        return JSONResponse(status_code=200, content={"message": found_book})
     except SessionIdNotFoundError:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError:
@@ -260,7 +260,7 @@ async def edit_book_by_id(request: Request, book_data: book_edit, id: str):
     finally:
         db.close()
 
-@router.delete("/book_delete/{id}")
+@router.delete("/delete_book/{id}")
 async def book_delete_by_id(request: Request, id: str):
     db = get_db()
     try:
