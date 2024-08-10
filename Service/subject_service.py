@@ -1,6 +1,7 @@
 from Data.subject import *
 from Database.models import *
 from Database.database import db
+from Service.error import *
 
 # id
 
@@ -11,36 +12,6 @@ COLOR_SET = {'#21ACA9', '#34CDEF', '#7475BB',
              '#F8CA8F', '#EDED2A', '#FFD749',
              '#809A79', '#C7DBF8', '#FF94E7',
              '#FF9568', '#D7FFAF'}
-
-class SubjectNotFoundError(Exception):
-    def __init__(self, message="Subject not found."):
-        self.message = message
-        super().__init__(self.message)
-
-class SubjectAlreadyExistsError(Exception):
-    def __init__(self, message="Subject already exists."):
-        self.message = message
-        super().__init__(self.message)
-
-class InvalidSubjectDataError(Exception):
-    def __init__(self, message="Invalid subject data."):
-        self.message = message
-        super().__init__(self.message)
-
-class DatabaseCommitError(Exception):
-    def __init__(self, message="Database commit error occurred."):
-        self.message = message
-        super().__init__(self.message)
-
-class SubjectUpdateError(Exception):
-    def __init__(self, message="Failed to update subject."):
-        self.message = message
-        super().__init__(self.message)
-
-class ColorExhaustedError(Exception):
-    def __init__(self, message="No more colors available in the COLOR_SET."):
-        self.message = message
-        super().__init__(self.message)
 
 class subject_service:
     def to_subject_db(subject_register: subject_register, user_id: str):
@@ -107,8 +78,11 @@ class subject_service:
             raise e
 
     def remain_color(user_id: str, db):
-        used_color = set([subject.color for subject in subject_service.find_subject_by_user_id(user_id, db)])
-        return list(COLOR_SET - used_color)
+        try:
+            used_color = set([subject.color for subject in subject_service.find_subject_by_user_id(user_id, db)])
+            return list(COLOR_SET - used_color)
+        except SubjectNotFoundError:
+            return list(COLOR_SET)
 
     def random_color(user_id: str, db):
         remain_color = subject_service.remain_color(user_id, db)
@@ -116,41 +90,45 @@ class subject_service:
             raise ColorExhaustedError
         return random.choice(remain_color)
 
-    def edit_subject(subject_data: subject_edit, id: str, user_id: str, db):
-        try:
-            subject_service.check_title_exists(subject_data.title, user_id, db)
-            existing_subject = subject_service.find_subject_by_color(subject_data.color, user_id, db)
-            #######################
-            if existing_subject is not None:
-                original_color = subject_service.find_subject_by_id(id, db).color
-                subject_service.edit_subject_color(original_color, existing_subject.id, db)
-            subject_service.edit_subject_title(subject_data.title, id, db)
-            subject_service.edit_subject_color(subject_data.color, id, db)
-        except SubjectAlreadyExistsError:
-            raise
-        except SubjectNotFoundError:
-            raise
-        except Exception as e:
-            raise SubjectUpdateError from e
+    # def edit_subject(subject_data: subject_edit, id: str, user_id: str, db):
+    #     try:
+    #         # 컬러셋 내에서 온 값인지 확인
+    #         subject_service.check_title_exists(subject_data.title, user_id, db)
+    #         existing_subject = subject_service.find_subject_by_color(subject_data.color, user_id, db)
+    #         #######################
+    #         if existing_subject is not None:
+    #             original_color = subject_service.find_subject_by_id(id, db).color
+    #             subject_service.edit_subject_color(original_color, existing_subject.id, db)
+    #         subject_service.edit_subject_title(subject_data.title, id, db)
+    #         subject_service.edit_subject_color(subject_data.color, id, db)
+    #     except SubjectAlreadyExistsError:
+    #         raise
+    #     except SubjectNotFoundError:
+    #         raise
+    #     except Exception as e:
+    #         raise SubjectUpdateError from e
 
-    def edit_subject_title(new_title: str, id: str, db):
+    # def edit_subject_title(new_title: str, id: str, db):
+    #     try:
+    #         found_subject = subject_service.find_subject_by_id(id, db)
+    #         found_subject.title = new_title
+    #         db.commit()
+    #     except SubjectNotFoundError:
+    #         raise
+    #     except Exception as e:
+    #         db.rollback()
+    #         raise SubjectUpdateError from e
+
+    def edit_subject_color(new_color: str, id: str, user_id: str, db):
         try:
-            found_subject = subject_service.find_subject_by_id(id, db)
-            found_subject.title = new_title
+            found_subject = subject_service.find_subject_by_color(new_color, user_id, db)
+            target_subject = subject_service.find_subject_by_id(id, db)
+            if found_subject is not None:
+                found_subject.color = target_subject.color
+            target_subject.color = new_color
             db.commit()
         except SubjectNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise SubjectUpdateError from e
-
-    def edit_subject_color(new_color: str, id: str, db):
-        try:
-            found_subject = subject_service.find_subject_by_id(id, db)
-            found_subject.color = new_color
-            db.commit()
-        except SubjectNotFoundError:
-            raise
+            raise SubjectNotFoundError
         except Exception as e:
             db.rollback()
             raise SubjectUpdateError from e

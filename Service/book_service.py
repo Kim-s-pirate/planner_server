@@ -2,6 +2,8 @@ from Database.models import book, subject
 from Data.book import *
 from Database.database import db
 from Service.subject_service import *
+from Service.error import *
+
 
 # id
 
@@ -11,40 +13,6 @@ INITIAL_LIST = [
     "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"
 ]
 
-class BookNotFoundError(Exception):
-    def __init__(self, message="Book not found"):
-        self.message = message
-        super().__init__(self.message)
-
-class BookAlreadyExistsError(Exception):
-    def __init__(self, message="Book already exists"):
-        self.message = message
-        super().__init__(self.message)
-
-class InvalidBookDataError(Exception):
-    def __init__(self, message="Invalid book data"):
-        self.message = message
-        super().__init__(self.message)
-
-class DatabaseCommitError(Exception):
-    def __init__(self, message="Database commit error occurred"):
-        self.message = message
-        super().__init__(self.message)
-
-class BookUpdateError(Exception):
-    def __init__(self, message="Failed to update book"):
-        self.message = message
-        super().__init__(self.message)
-
-class PageRangeError(Exception):
-    def __init__(self, message="Start page cannot be greater than end page"):
-        self.message = message
-        super().__init__(self.message)
-
-class NegativePageNumberError(Exception):
-    def __init__(self, message="Page number cannot be negative"):
-        self.message = message
-        super().__init__(self.message)
 
 class book_service:
     def to_book_db(book_register: book_register, user_id: str):
@@ -288,3 +256,7 @@ class book_service:
             raise NegativePageNumberError
         if start_page > end_page:
             raise PageRangeError
+        
+    def book_id_list(user_id: str, db):
+        book_list = db.query(book).filter(book.user_id == user_id).all()
+        return [book.id for book in book_list]

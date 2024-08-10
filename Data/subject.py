@@ -10,6 +10,8 @@ class subject_data(BaseModel):
     title: str
     color: str
 
-class subject_edit(BaseModel):
+class subject_title(BaseModel):
     title: str
+
+class subject_color(BaseModel):
     color: str

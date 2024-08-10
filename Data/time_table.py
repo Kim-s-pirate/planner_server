@@ -90,7 +90,7 @@ class time_table_register(BaseModel):
 
 class time_table_data(BaseModel):
     date: date
-    userid: str
+    user_id: str
     subject_id: str
     time: Optional[List[unit_time]] = []
 

@@ -13,7 +13,7 @@ from Service.book_service import *
 
 router = APIRouter()
 
-@router.post("/register_book")
+@router.post("/register/book")
 async def register_book(request: Request, book_data: book_register):
     db = get_db()
     try:
@@ -35,7 +35,7 @@ async def register_book(request: Request, book_data: book_register):
     finally:
         db.close()
 
-@router.get("/check_title_exists/{title}")
+@router.get("/book/check_title_exists")
 async def duplicate_subject(request: Request, title: str):
     db = get_db()
     try:
@@ -88,7 +88,7 @@ async def get_book_by_id(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/book_subject/{id}")
+@router.get("/book/book_subject/{id}")
 async def get_book_subject(request: Request, id: str):
     db = get_db()
     try:
@@ -96,7 +96,7 @@ async def get_book_subject(request: Request, id: str):
         found_book = book_service.find_book_by_id(id, db)
         if requester_id != found_book.user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-        return JSONResponse(status_code=200, content={"message": found_book.subject_id})
+        return JSONResponse(status_code=200, content={"message": found_book})
     except SessionIdNotFoundError:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError:
@@ -110,7 +110,8 @@ async def get_book_subject(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/book_list")
+# book_list 쿼리 파라미터로 통합 필요
+@router.get("/book/book_list")
 async def book_list(request: Request):
     db = get_db()
     try:
@@ -133,7 +134,7 @@ async def book_list(request: Request):
     finally:
         db.close()
 
-@router.get("/book_list/{subject_id}")
+@router.get("/book/book_list/{subject_id}")
 async def book_list_by_subject(request: Request, subject_id: str):
     db = get_db()
     try:
@@ -167,7 +168,7 @@ async def book_list_by_subject(request: Request, subject_id: str):
     finally:
         db.close()
 
-@router.get("/book_list_by_status")
+@router.get("/book/book_list/status/{status}")
 async def book_list_by_status(request: Request, status: bool):
     db = get_db()
     try:
@@ -193,7 +194,7 @@ async def book_list_by_status(request: Request, status: bool):
         db.close()
 
 # 통합 검색 기능
-@router.get("/book_search/{keyword}")
+@router.get("/search/book/{keyword}")
 async def book_search(request: Request, keyword: str):
     db = get_db()
     try:
@@ -228,7 +229,7 @@ async def book_search(request: Request, keyword: str):
     finally:
         db.close()
 
-@router.post("/edit_book/{id}")
+@router.post("/edit/book/{id}")
 async def edit_book_by_id(request: Request, book_data: book_edit, id: str):
     db = get_db()
     try:
@@ -260,12 +261,12 @@ async def edit_book_by_id(request: Request, book_data: book_edit, id: str):
     finally:
         db.close()
 
-@router.delete("/delete_book/{id}")
+@router.delete("/delete/book/{id}")
 async def book_delete_by_id(request: Request, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        requester_id = AuthorizationService.verify_session(request, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
         if requester_id != book_service.find_book_by_id(id, db).user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this book"})
         book_service.delete_book_by_id(id, db)

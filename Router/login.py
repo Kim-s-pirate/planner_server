@@ -11,10 +11,27 @@ from datetime import datetime, timezone, timedelta
 from Service.authorization_service import *
 import os
 from dotenv import load_dotenv
-
+from authlib.integrations.starlette_client import OAuth
+from starlette.config import Config
 router = APIRouter()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+oauth = OAuth()
 
-@router.post("/login")
+oauth.register(
+    name='google',
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    access_token_params=None,
+    refresh_token_url=None,
+    redirect_uri='http://localhost:1500/auth',
+    client_kwargs={'scope': 'openid profile email'},
+)
+
+@router.post("/account/login")
 async def login(request: Request, user_data: user_login):
     db = get_db()
     try:
@@ -35,13 +52,13 @@ async def login(request: Request, user_data: user_login):
         return response
     except UserNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": e.message})
-    except Exception:
+    except Exception as e:
+        raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while logging in the user"})
     finally:
         db.close()
 
-
-@router.get("/logout")
+@router.get("/account/logout")
 async def logout(request: Request):
     db = get_db()
     try:
@@ -58,3 +75,32 @@ async def logout(request: Request):
         return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})
     finally:
         db.close()
+
+#oauth2
+@router.get('/account/oauth2/login')
+async def login(request: Request):
+    redirect_uri = os.getenv('REDIRECT_URI')
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@router.get('/account/auth')
+async def auth(request: Request):
+    try:
+        token = await oauth.google.authorize_access_token(request)
+        user = await oauth.google.parse_id_token(request, token)
+        # 여기서 얻은 사용자 정보를 이용해 필요한 작업을 수행
+        return JSONResponse({
+            "access_token": token["access_token"],
+            "id_token": token["id_token"],
+            "user_info": user
+        })
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"message": str(e)})
+
+# 사용자 정보 API
+@router.get('/account/user-info')
+async def user_info(token: str):
+    try:
+        user = await oauth.google.parse_id_token(Request, {"id_token": token})
+        return JSONResponse({"user_info": user})
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"message": "Invalid token"})
