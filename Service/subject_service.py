@@ -60,10 +60,10 @@ class subject_service:
             color=subject_entity.color
         )
 
-    def create_subject(subject_entity: subject, db):
+    def create_subject(subject: subject, db):
         try:
-            subject_service.check_title_exists(subject_entity.title, subject_entity.user_id, db)
-            db.add(subject_entity)
+            subject_service.check_title_exists(subject.title, subject.user_id, db)
+            db.add(subject)
             db.commit()
         except SubjectAlreadyExistsError:
             raise
@@ -136,7 +136,7 @@ class subject_service:
     def edit_subject_title(new_title: str, id: str, db):
         try:
             found_subject = subject_service.find_subject_by_id(id, db)
-            found_subject.subject = new_title
+            found_subject.title = new_title
             db.commit()
         except SubjectNotFoundError:
             raise
