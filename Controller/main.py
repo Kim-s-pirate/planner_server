@@ -58,4 +58,4 @@ if __name__ == "__main__":
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
-    uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True, ssl_keyfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\key.pem", ssl_certfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\cert.pem" )
+    uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True, ssl_keyfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\key.pem", ssl_certfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\cert.pem")
