@@ -64,7 +64,7 @@ async def get_day_schedule(request: Request, date: date):
         schedule = calendar_service.find_schedule_by_date(date, user_id, db)
         schedule = calendar_service.to_schedule_data(schedule)
         schedule = calendar_service.schedule_to_dict(schedule)
-        return JSONResponse(status_code=200, content={"schedule": schedule})
+        return JSONResponse(status_code=200, content={"message": schedule})
 
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})

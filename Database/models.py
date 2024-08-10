@@ -40,7 +40,6 @@ class to_do(Base): # id
     title = Column(String(50), nullable=False)
     status = Column(Boolean, default=True, nullable=False)
     book_id = Column(String(100), ForeignKey('books.id', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
-    subject_id= Column(String(100), ForeignKey('subjects.id', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
     book = relationship("book", back_populates="to_do", foreign_keys=[book_id])#이거 코드 필요한지 확인 필요
     user = relationship("user", back_populates="to_do")
     __table_args__ = (UniqueConstraint('user_id', 'title', 'date', 'book_id', name='unique_user_id_title_date_book_id'),)#이걸 책까지 포함할지 말지는 고민해봐야함
@@ -110,6 +109,8 @@ class planner(Base): # id
     #해당 컬럼에 트리거 필요
     user = relationship("user", back_populates="planner")
     __table_args__ = (PrimaryKeyConstraint('date', 'user_id'), UniqueConstraint('user_id', 'date', name='unique_user_id_date'),)
+
+    #planner에 추가 색에 대한 column이 필요함
 
 class time_table(Base): # id
     __tablename__ = "time_table"

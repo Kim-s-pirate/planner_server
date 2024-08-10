@@ -233,10 +233,10 @@ class book_service:
     #         raise e
 
     def find_subject_by_book_title(booktitle: str, user_id: str, db):
-        return db.query(book).filter(book.title == booktitle, book.user_id == user_id).first().subject
+        return db.query(book).filter(book.title == booktitle, book.user_id == user_id).first()
 
     def find_subject_by_book_id(id: str, db):
-        return db.query(book).filter(book.id == id).first().subject
+        return db.query(book).filter(book.id == id).first()
 
     def find_book_by_subject(subject: str, user_id: str, db):
         return db.query(book).filter(book.subject == subject, book.user_id == user_id).all()
