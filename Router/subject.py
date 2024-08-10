@@ -12,10 +12,11 @@ from starlette.status import *
 from fastapi import Query, Request
 from Service.authorization_service import *
 from Data.subject import *
+from Service.error import *
 
 router = APIRouter()
 
-@router.post("/subject_register")
+@router.post("/register/subject")
 async def subject_register(request: Request, subject_data: subject_register):
     db = get_db()
     try:
@@ -39,7 +40,7 @@ async def subject_register(request: Request, subject_data: subject_register):
     finally:
         db.close()
 
-@router.get("/check_title_exists/{title}")
+@router.get("/subject/check_title_exists")
 async def check_title_exists(request: Request, title: str):
     db = get_db()
     try:
@@ -82,7 +83,9 @@ async def get_subject_by_id(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/subject/{title}")
+# 통합 검색 기능 구현 필요
+
+@router.get("/search/subject/{title}")
 async def get_subject_by_title(request: Request, title: str):
     db = get_db()
     try:
@@ -103,7 +106,7 @@ async def get_subject_by_title(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/subject_list")
+@router.get("/subject/subject_list")
 async def get_subject_list(request: Request):
     db = get_db()
     try:
@@ -125,8 +128,8 @@ async def get_subject_list(request: Request):
     finally:
         db.close()
 
-@router.get("/subject_color/{id}")
-async def subject_color(request: Request, id: str):
+@router.get("/subject/subject_color/{id}")
+async def get_get_subject_color(request: Request, id: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)
@@ -147,7 +150,7 @@ async def subject_color(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/remain_color")
+@router.get("/subject/remain_color")
 async def remain_color(request: Request):
     db = get_db()
     try:
@@ -167,16 +170,39 @@ async def remain_color(request: Request):
     finally:
         db.close()
 
-@router.post("/edit_subject/{id}")
-async def edit_subject_by_id(request: Request, subject_data: subject_edit, id: str):
+# @router.post("/edit/subject/{id}")
+# async def edit_subject_by_id(request: Request, subject_data: subject_edit, id: str):
+#     db = get_db()
+#     try:
+#         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+#         requester_id = AuthorizationService.verify_session(request, db)["id"]
+#         #이쯤에 색깔이 있는지 확인하는 코드가 필요할 듯
+#         if requester_id != subject_service.find_subject_by_id(id, db).user_id:
+#             return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
+#         subject_service.edit_subject(subject_data, id, requester_id, db)
+#         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
+#     except SessionIdNotFoundError:
+#         return JSONResponse(status_code=401, content={"message": "Token not found"})
+#     except SessionVerificationError:
+#         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#     except SessionExpiredError:
+#         return JSONResponse(status_code=440, content={"message": "Session expired"})
+#     except SubjectNotFoundError:
+#         return JSONResponse(status_code=404, content={"message": "Subject not found"})
+#     except:
+#         return JSONResponse(status_code=500, content={"message": "There was some error while editing the subject"})
+#     finally:
+#         db.close()
+
+@router.post("/edit/subject_title/{id}")
+async def edit_title(request: Request, id: str, new_title: subject_title):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        #########
         if requester_id != subject_service.find_subject_by_id(id, db).user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
-        subject_service.edit_subject(subject_data, id, requester_id, db)
+        subject_service.edit_subject_title(new_title.title, id, db)
         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
     except SessionIdNotFoundError:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -191,15 +217,17 @@ async def edit_subject_by_id(request: Request, subject_data: subject_edit, id: s
     finally:
         db.close()
 
-@router.post("/edit_color/{id}")
-async def edit_color(request: Request, id: str, new_color: str):
+@router.post("/edit/subject_color/{id}")#색이 set에 존재하는 색인지 확인, 그리고 이미 사용하는 책이 없는지 확인
+async def edit_color(request: Request, id: str, new_color: subject_color):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        requester_id = AuthorizationService.verify_session(request, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
         if requester_id != subject_service.find_subject_by_id(id, db).user_id:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
-        subject_service.edit_subject_color(new_color, id, db)
+        if not new_color.color in COLOR_SET:
+            return JSONResponse(status_code=400, content={"message": "Color not found in color set"})
+        subject_service.edit_subject_color(new_color.color, id, requester_id, db)
         return JSONResponse(status_code=200, content={"message": "Subject color edited successfully"})
     except SessionIdNotFoundError:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -214,7 +242,7 @@ async def edit_color(request: Request, id: str, new_color: str):
     finally:
         db.close()
 
-@router.delete("/delete_subject/{id}")
+@router.delete("/delete/subject/{id}")
 async def delete_subject_by_id(request: Request, id: str):
     db = get_db()
     try:

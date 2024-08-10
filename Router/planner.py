@@ -10,7 +10,7 @@ from Data.planner import *
 
 router = APIRouter()
 
-@router.post("/planner_register")
+@router.post("/register/planner")
 async def planner_register(request: Request, planner_data: planner_register):
     try:
         db = get_db()
@@ -20,15 +20,7 @@ async def planner_register(request: Request, planner_data: planner_register):
         user_id = session['id']
         to_do_list = planner_data.to_do_list
         time_table_list = planner_data.time_table_list
-        # if to_do_list == [] and time_table_list == []:
-        #     planner_service.delete_planner_by_date(planner_data.date, user)
-        # if to_do_list == []:
-        #     planner_service.delete_to_do_by_date(planner_data.date, user)
-        # if time_table_list == []:
-        #     planner_service.delete_time_table_by_date(planner_data.date, user)
-        #여기 처리 방식이 잘못됐음
-        #어짜피 다시 등록되기 때문에 확인 후 수정
-        planner_data = planner_service.verify_planner(planner_data, db)
+        planner_data = planner_service.verify_planner(planner_data, user_id, db)
         planner_service.register_planner(user_id, planner_data, db)
 
         planner_service.register_planner_study_time(planner_data.date, user_id, db)
@@ -42,8 +34,8 @@ async def planner_register(request: Request, planner_data: planner_register):
     finally:
         db.close()
         
-@router.get("/get_planner")
-async def get_planner(request: Request, date: date = Query(None)):
+@router.get("/planner/{date}")
+async def get_planner(request: Request, date: date):
     try:
         db = get_db()
         session = AuthorizationService.verify_session(request, db)

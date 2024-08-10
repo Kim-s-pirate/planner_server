@@ -6,22 +6,8 @@ from Data.task import task
 from Database.database import db
 from datetime import date, datetime
 from Service.date_service import date_service
+from Service.error import *
 import json
-
-class ScheduleNotFoundError(Exception):
-    def __init__(self, message="Schedule not found"):
-        self.message = message
-        super().__init__(self.message)
-
-class InvalidScheduleDataError(Exception):
-    def __init__(self, message="Invalid schedule data"):
-        self.message = message
-        super().__init__(self.message)
-
-class DatabaseCommitError(Exception):
-    def __init__(self, message="Database commit error occurred"):
-        self.message = message
-        super().__init__(self.message)
 
 class calendar_service:
     def to_schedule_db(schedule_data: day_schedule_register, user_id: str):

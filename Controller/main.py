@@ -12,12 +12,14 @@ from Database.database import create_database, engine
 from Router import register, login, main_page, book, subject, calendar, planner, email
 from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
-
 create_database()
-
 from Service.email_service import email_service
 import threading
 import schedule
+
+load_dotenv("../.env")
+secret = os.getenv("secret")
+
 
 schedule.every(10).minutes.do(lambda: email_service.delete_expired_verification(db))
 
@@ -28,8 +30,7 @@ def run_scheduler():
 
 app = FastAPI()
 
-load_dotenv("../.env")
-secret = os.getenv("secret")
+
 
 app.add_middleware(SessionMiddleware, secret_key=secret, max_age=10800)
 

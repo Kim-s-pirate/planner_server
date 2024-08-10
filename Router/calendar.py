@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 router = APIRouter()
 
-@router.post("/register_schedule")
+@router.post("/register/schedule")
 async def register_schedule(request: Request, schedule_data: day_schedule_register):
     db = get_db()
     try:
@@ -39,8 +39,8 @@ async def register_schedule(request: Request, schedule_data: day_schedule_regist
     finally:
         db.close()
 
-@router.get("/get_day_schedule")
-async def get_day_schedule(request: Request, date: date):
+@router.get("/day_schedule/{date}")
+async def get_day_schedule(request: Request,date: date):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
@@ -62,9 +62,8 @@ async def get_day_schedule(request: Request, date: date):
     finally:
         db.close()
 
-# 이부분을 굳이 param으로 할 이유는 없을 듯
-@router.get("/get_month_schedule")
-async def get_month_schedule(request: Request, year: str = Query(None), month: str = Query(None)):
+@router.get("/month_schedule")
+async def get_month_schedule(request: Request, year: str, month: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
@@ -87,8 +86,8 @@ async def get_month_schedule(request: Request, year: str = Query(None), month: s
     finally:
         db.close()
 
-@router.delete("/delete_day_schedule")
-async def delete_schedule(request: Request, date: date = Query(None)):
+@router.delete("/delete/day_schedule/{date}")
+async def delete_schedule(request: Request, date: date):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -108,8 +107,8 @@ async def delete_schedule(request: Request, date: date = Query(None)):
     finally:
         db.close()
 
-@router.delete("/delete_month_schedule")
-async def delete_schedule(request: Request, year: str = Query(None), month: str = Query(None)):
+@router.delete("/delete/month_schedule")
+async def delete_schedule(request: Request, year: str, month: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -129,8 +128,8 @@ async def delete_schedule(request: Request, year: str = Query(None), month: str 
     finally:
         db.close()
 
-@router.post("/register_calendar_goal")
-async def register_calendar_goal(goal_data: calendar_goal_register, request: Request):
+@router.post("/register/goal")
+async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -164,9 +163,9 @@ async def register_calendar_goal(goal_data: calendar_goal_register, request: Req
         db.close()
 
 #edit_calendar_goal 라우터 추가
-
-@router.delete("/delete_calendar_goal/{year}/{month}")
-async def delete_calendar_goal(year: int, month: int, request: Request):
+#값이 안들어왔을때 에러 처리
+@router.delete("/delete/goal")
+async def delete_calendar_goal(request: Request, year: int, month: int):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))

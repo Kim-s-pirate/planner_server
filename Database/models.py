@@ -22,6 +22,7 @@ class user(Base): # id
     planner = relationship("planner", back_populates="user", cascade="all, delete, save-update")
     time_table = relationship("time_table", back_populates="user", cascade="all, delete, save-update")
     to_do = relationship("to_do", back_populates="user", cascade="all, delete, save-update")
+    result = relationship("result", back_populates="user", cascade="all, delete, save-update")
     #내가 보기엔 굳이 userid랑 FK로 연결할 필요가 없어보임. 그냥 id로 연결해도 될듯
     #하지만 userid를 항상 쿼리해야해서 시간 복잡도가 올라갈 수도 있어서 user를 제외한 참조들을 id를 쓰는 것이 좋아보임
 
@@ -58,6 +59,7 @@ class book(Base): # id
     user = relationship("user", back_populates="books") 
     subject = relationship("subject", back_populates="books")
     to_do = relationship("to_do", back_populates="book", foreign_keys=[to_do.book_id], cascade="all, delete, save-update")
+    result = relationship("result", back_populates="book", cascade="all, delete, save-update")
     __table_args__ = (UniqueConstraint('user_id', 'title', name='unique_user_id_title'),)
 
 def set_initial(mapper, connenction, target):
@@ -114,7 +116,7 @@ class planner(Base): # id
 
 class time_table(Base): # id
     __tablename__ = "time_table"
-    id = Column(Integer, primary_key=True, index=True, unique=True, nullable=False, autoincrement=True)
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
     date = Column(String(50), index=True, nullable=False)
     user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     subject_id = Column(String(100), ForeignKey('subjects.id', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
@@ -122,9 +124,21 @@ class time_table(Base): # id
     user = relationship("user", back_populates="time_table")
     subject = relationship("subject", back_populates="time_table")
     __table_args__ = (UniqueConstraint('user_id', 'date', 'subject_id', name='unique_user_id_date_subject_id'),)
+
+class result(Base):
+    __tablename__ = "results"
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
+    date = Column(String(50), index=True, nullable=False)
+    user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    book_id = Column(String(100), ForeignKey('books.id', ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
+    page = Column(JSON, nullable=False)
+    book = relationship("book", back_populates="result")
+    user = relationship("user", back_populates="result")
+    __table_args__ = (UniqueConstraint('user_id', 'date', 'book_id', name='unique_user_id_date_book_id'),)
         
 class verification(Base):
     __tablename__ = "verifications"
     email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
     code = Column(String(10), nullable=False)
     time = Column(DateTime, default=datetime.now, nullable=False)  # 현재 시간을 기본값으로 설정
+    expire_time = Column(DateTime, default=lambda: datetime.now() + datetime.timedelta(minutes=30), nullable=False)

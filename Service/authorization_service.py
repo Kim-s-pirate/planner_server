@@ -5,6 +5,7 @@ from fastapi import Request
 from Service.authorization_service import *
 from datetime import datetime, timezone, timedelta
 from Service.user_service import *
+from Service.error import *
 
 # id
 
@@ -18,20 +19,7 @@ from Service.user_service import *
 #         self.message = "Token verification failed"
 #         super().__init__(self.message)
 
-class SessionIdNotFoundError(Exception):
-    def __init__(self):
-        self.message = "Session ID not found"
-        super().__init__(self.message)
 
-class SessionVerificationError(Exception):
-    def __init__(self):
-        self.message = "Session verification failed"
-        super().__init__(self.message)
-
-class SessionExpiredError(Exception):
-    def __init__(self):
-        self.message = "Session expired"
-        super().__init__(self.message)
 
 load_dotenv("../.env")
 secret = os.getenv("secret")
