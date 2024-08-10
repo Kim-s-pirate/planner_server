@@ -70,18 +70,18 @@ event.listen(book, 'before_insert', set_initial)
 class subject(Base):
     __tablename__ = "subjects"
     id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
-    subject = Column(String(50), index=True, nullable=False)
+    title = Column(String(50), index=True, nullable=False)
     user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     color = Column(String(7), nullable=False)
     user = relationship("user", back_populates="subjects")
     books = relationship("book", back_populates="subject")
     time_table = relationship("time_table", back_populates="subject")
-    __table_args__ = (UniqueConstraint('user_id', 'subject', name='unique_user_id_subject'),)
+    __table_args__ = (UniqueConstraint('user_id', 'title', name='unique_user_id_title'),)
 
-    def __init__(self, subject, user_id, color=None):
+    def __init__(self, title, user_id, color=None):
         db = get_db()
         from Service.subject_service import subject_service
-        self.subject = subject
+        self.title = title
         self.user_id = user_id
         self.color = color if color else subject_service.random_color(user_id, db)
         
