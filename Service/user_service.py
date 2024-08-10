@@ -32,12 +32,12 @@ class UserUpdateError(Exception):
 class user_service:
     def to_user_db(user_register: user_register):
         try:
-            user_db = user()
-            user_db.userid = user_register.userid
-            user_db.username = user_register.username
-            user_db.email = user_register.email
-            user_db.password = user_register.password
-            return user_db
+            return user(
+                userid=user_register.userid,
+                username=user_register.username,
+                email=user_register.email,
+                password=user_register.password
+            )
         except:
             raise InvalidUserDataError
 
@@ -52,14 +52,10 @@ class user_service:
 
     def create_user(user: user, db):
         try:
-            if user_service.duplicate_userid(user.userid, db):
-                raise UserAlreadyExistsError(f"Userid '{user.userid}' already exists.")
-            if user_service.duplicate_email(user.email, db):
-                raise UserAlreadyExistsError(f"Email '{user.email}' already exists.")
+            user_service.check_userid_exists(user.userid, db)
+            user_service.check_email_exists(user.email, db)
             db.add(user)
             db.commit()
-        except InvalidUserDataError:
-            raise
         except UserAlreadyExistsError:
             raise
         except Exception as e:
@@ -84,31 +80,35 @@ class user_service:
             raise UserNotFoundError
         return user_from_email
 
-    def duplicate_userid(userid: str, db):
+    def check_userid_exists(userid: str, db):
         try:
-            found_user = user_service.find_user_by_userid(userid, db)
-            return found_user is not None
+            user_service.find_user_by_userid(userid, db)
+            raise UserAlreadyExistsError
         except UserNotFoundError:
-            return False
+            pass
+        except UserAlreadyExistsError:
+            raise UserAlreadyExistsError(f"Userid '{userid}' already exists.")
         except Exception as e:
             raise e
 
-    def duplicate_email(email: str, db):
+    def check_email_exists(email: str, db):
         try:
-            found_user = user_service.find_user_by_email(email, db)
-            return found_user is not None
+            user_service.find_user_by_email(email, db)
+            raise UserAlreadyExistsError
         except UserNotFoundError:
-            return False
+            pass
+        except UserAlreadyExistsError:
+            raise UserAlreadyExistsError(f"Userid '{email}' already exists.")
         except Exception as e:
             raise e
 
     def edit_user(user_data: user_edit, id: str, db):
         try:
-            existing_user = user_service.duplicate_userid(user_data.userid, db)
-            if existing_user is True:
-                raise UserAlreadyExistsError
+            user_service.check_userid_exists(user_data.userid, db)
             user_service.edit_userid(user_data.userid, id, db)
             user_service.edit_username(user_data.username, id, db)
+        except UserAlreadyExistsError:
+            raise
         except UserNotFoundError:
             raise
         except Exception as e:
@@ -164,6 +164,9 @@ class user_service:
             if result == False:
                 raise UserNotFoundError
             db.commit()
+        except UserNotFoundError:
+            db.rollback()
+            raise
         except Exception as e:
             db.rollback()
             raise DatabaseCommitError from e
@@ -174,6 +177,9 @@ class user_service:
             if result == False:
                 raise UserNotFoundError
             db.commit()
+        except UserNotFoundError:
+            db.rollback()
+            raise
         except Exception as e:
             db.rollback()
             raise DatabaseCommitError from e

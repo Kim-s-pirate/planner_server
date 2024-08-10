@@ -12,7 +12,6 @@ from Service.authorization_service import *
 
 router = APIRouter()
 
-
 @router.post("/register")
 async def register(user_data: user_register):
     db = get_db()
@@ -27,33 +26,32 @@ async def register(user_data: user_register):
         return JSONResponse(status_code=500, content={"message": "User registration failed"})
     finally:
         db.close()
-
-
-@router.get("/duplicate_userid")
-async def duplicate_userid(userid: str):
+    
+@router.get("/check_userid_exists")
+async def check_userid_exists(userid: str):
     db = get_db()
     try:
-        if user_service.duplicate_userid(userid, db):
-            return JSONResponse(status_code=409, content={"message": "User already exists"})
-        return JSONResponse(status_code=404, content={"message": "User not found"})
+        user_service.check_userid_exists(userid, db)
+        return JSONResponse(status_code=200, content={"message": "Userid is available"})
+    except UserAlreadyExistsError as e:
+        return JSONResponse(status_code=409, content={"message": e.message})
     except:
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the user"})
     finally:
         db.close()
 
-
-@router.get("/duplicate_email")
-async def duplicate_email(email: str):
+@router.get("/check_email_exists")
+async def check_email_exists(email: str):
     db = get_db()
     try:
-        if user_service.duplicate_email(email, db):
-            return JSONResponse(status_code=409, content={"message": "User already exists"})
-        return JSONResponse(status_code=404, content={"message": "User not found"})
+        user_service.check_email_exists(email, db)
+        return JSONResponse(status_code=200, content={"message": "Email is available"})
+    except UserAlreadyExistsError as e:
+        return JSONResponse(status_code=409, content={"message": e.message})
     except:
         return JSONResponse(status_code=500, content={"message": "There was some error while checking the user"})
     finally:
         db.close()
-
 
 @router.post("/edit_user/{id}")
 async def edit_user_by_id(request: Request, user_data: user_edit, id: str):
@@ -62,7 +60,7 @@ async def edit_user_by_id(request: Request, user_data: user_edit, id: str):
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         if requester_id != id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this user"})
+            return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this user"})
         user_service.edit_user(user_data, id, db)
         AuthorizationService.modify_session(request, user_data.userid)
         return JSONResponse(status_code=200, content={"message": "User edited successfully"})
@@ -78,7 +76,6 @@ async def edit_user_by_id(request: Request, user_data: user_edit, id: str):
         return JSONResponse(status_code=500, content={"message": "There was some error while editing the user"})
     finally:
         db.close()
-
 
 @router.post("/edit_password/{id}")
 def edit_password(request: Request, password: user_password, id: str):
@@ -105,10 +102,9 @@ def edit_password(request: Request, password: user_password, id: str):
     finally:
         db.close()
 
-
 # 서버에서 사용하는 유저 삭제와 회원 탈퇴를 분리해야 함
-@router.delete("/user_delete/{id}")
-async def user_delete_by_id(request: Request, id: str):
+@router.delete("/delete_user/{id}")
+async def delete_user_by_id(request: Request, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -127,6 +123,11 @@ async def user_delete_by_id(request: Request, id: str):
         return JSONResponse(status_code=500, content={"message": "There was some error while deleting the user"})
     finally:
         db.close()
+
+
+
+
+
 
 # @router.delete("/user_delete/{user_id}")
 # async def user_delete_by_userid(request: Request, user_id: str):
