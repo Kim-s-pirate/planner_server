@@ -572,3 +572,40 @@ async def book_delete_by_id(request: Request, book_id: str):
 
     finally:
         db.close()
+
+@router.get("/subject_book_list")
+async def subject_book_list(request: Request):
+    db = get_db()
+    try:
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        subjects = subject_service.find_subject_by_user_id(user_id, db)
+        subject_list = []
+        data = {}
+        for subject_entity in subjects:
+            subject = subject_service.to_subject_data(subject_entity).__dict__
+            del subject['user_id']
+            subject_list.append(subject)
+        books = book_service.find_book_by_status(True, user_id, db)
+        book_list = []
+        for book_entity in books:
+            book = book_service.to_book_data(book_entity).__dict__
+            del book['user_id']
+            del book['subject_id']
+            book_list.append(book)
+        data['subjects'] = subject_list
+        data['books'] = book_list
+
+        return JSONResponse(status_code=200, content={"message": data})
+
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "There was some error while checking the subject list"})
+
+    finally:
+        db.close()

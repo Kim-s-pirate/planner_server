@@ -21,15 +21,27 @@ class TimeTableOverlapError(Exception):
         super().__init__(self.message)
 
 class planner_service:
+    # def to_planner_db(planner_data: planner_data, db):
+    #     return planner(
+    #         date=planner_data.date,
+    #         user_id=planner_data.user_id,
+    #         study_time=planner_data.study_time
+    #     )
+    
+    def to_planner_data(planner: planner):
+        return planner_data(
+            date=planner.date,
+            user_id=planner.user_id,
+            study_time=planner.study_time
+        )
+
     def to_to_do_db(to_do_data: to_do_register, user_id: str, db):
-        subject_id = subject_service.find_subject_by_id(to_do_data.subject_id, db).subject_id
         return to_do(
             date=to_do_data.date,
             user_id=user_id,
             title=to_do_data.title,
             status=to_do_data.status,
-            book_id=to_do_data.book_id,
-            subject_id=subject_id
+            book_id=to_do_data.book_id
         )
     
     def to_to_do_data(to_do: to_do):
@@ -38,18 +50,17 @@ class planner_service:
             user_id=to_do.user_id,
             title=to_do.title,
             status=to_do.status,
-            book_id=to_do.book_id,
-            subject_id=to_do.subject_id
+            book_id=to_do.book_id
         )
     
     def to_time_table_db(time_table_data: time_table_register, user_id: str, db):
-        subject_id = subject_service.find_subject_by_id(time_table_data.subject_id, db).subject_id
+        #subject_id = subject_service.find_subject_by_id(time_table_data.subject_id, db).id
         time = [str(time) for time in list(set(time_table_data.time))]
         return time_table(
             date=time_table_data.date,
             user_id=user_id,
             time=time,
-            subject_id=subject_id
+            subject_id=time_table_data.subject_id
         )
     
     def to_time_table_data(time_table: time_table):
@@ -143,13 +154,14 @@ class planner_service:
         planner_entity = planner_service.find_planner_by_date(date, user_id, db)
         planner_entity.study_time = study_time
 
-    def verify_planner(planner_data: planner_register, user_id: str, db):
-        for to_do in planner_data.to_do_list:
-            if to_do.subject != book_service.find_subject_by_book_title(to_do.book_title, user_id, db):
-                raise BookSubjectMismatchError
+    def verify_planner(planner_data: planner_register, db):
         time_set_list = [set(time_table.time) for time_table in planner_data.time_table_list]
         total = sum(len(s) for s in time_set_list)
         union_total = len(set.union(*time_set_list))
         if total != union_total:
             raise TimeTableOverlapError
-        return True
+        return planner_data
+    
+    def get_planner(user_id: str, date: date, db):
+        planner_list = db.query(planner).filter(planner.user_id == user_id, planner.date == date).all()
+        return planner_list
