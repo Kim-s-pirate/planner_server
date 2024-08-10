@@ -2,10 +2,14 @@ from pydantic import BaseModel
 from typing import Optional
 
 class subject_register(BaseModel):
-    subject: str
+    title: str
 
 class subject_data(BaseModel):
     id: str
     user_id: str
-    subject: str
+    title: str
+    color: str
+
+class subject_edit(BaseModel):
+    title: str
     color: str
