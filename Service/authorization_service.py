@@ -84,3 +84,7 @@ class AuthorizationService:
             raise SessionIdNotFoundError
         AuthorizationService.session_db[session_id]['userid'] = new_userid
         return True
+
+    def check_authorization(id: str, another_id: str):
+        if id != another_id:
+            raise UnauthorizedError

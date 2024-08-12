@@ -13,6 +13,7 @@ import os
 from dotenv import load_dotenv
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
+
 router = APIRouter()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -39,10 +40,10 @@ async def login(request: Request, user_data: user_login):
         if session_id:
             verify = AuthorizationService.check_session(request)
             if verify:
-                return JSONResponse(status_code=226, content={"message": "Already logged in"})
+                raise DuplicateLoginError
         found_user = user_service.find_user_by_email(user_data.email, db)
-        if user_data.password != found_user.password:
-            return JSONResponse(status_code=423, content={"message": "User login failed"})
+        if not found_user or user_data.password != found_user.password:
+            raise UserNotFoundError
         session_id = AuthorizationService.generate_session(found_user.userid, found_user.id)
         response = JSONResponse(
             status_code=200,
@@ -50,11 +51,12 @@ async def login(request: Request, user_data: user_login):
         )
         response.set_cookie(key="session_id", value=session_id, httponly=True)
         return response
+    except DuplicateLoginError as e:
+        return JSONResponse(status_code=226, content={"message": "Already logged in"})
     except UserNotFoundError as e:
-        return JSONResponse(status_code=404, content={"message": e.message})
+        return JSONResponse(status_code=404, content={"message": "ID or password does not match"})
     except Exception as e:
-        raise e
-        return JSONResponse(status_code=500, content={"message": "There was some error while logging in the user"})
+        return JSONResponse(status_code=500, content={"message": "User login failed"})
     finally:
         db.close()
 
@@ -70,7 +72,7 @@ async def logout(request: Request):
     except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except SessionExpiredError:
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
+        return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
     except:
         return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})
     finally:

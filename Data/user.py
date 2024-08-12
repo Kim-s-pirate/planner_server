@@ -10,14 +10,13 @@ class user_login(BaseModel):
     email: str
     password:str
 
-class email(BaseModel):
+class user_email(BaseModel):
     email: str
 
-class userid(BaseModel):
+class user_userid(BaseModel):
     userid: str
 
-class user_edit(BaseModel):
-    userid: str
+class user_username(BaseModel):
     username: str
 
 class user_data(BaseModel):

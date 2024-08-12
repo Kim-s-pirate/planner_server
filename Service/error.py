@@ -1,47 +1,57 @@
+class UnauthorizedError(Exception):
+    def __init__(self, message="You are not authorized to edit this user"):
+        self.message = message
+        super().__init__(self.message)
+
 # user
 class UserNotFoundError(Exception):
-    def __init__(self, message="User not found."):
+    def __init__(self, message="User not found"):
         self.message = message
         super().__init__(self.message)
 
 class UserAlreadyExistsError(Exception):
-    def __init__(self, message="User already exists."):
+    def __init__(self, message="User already exists"):
         self.message = message
         super().__init__(self.message)
 
 class InvalidUserDataError(Exception):
-    def __init__(self, message="Invalid user data."):
+    def __init__(self, message="Invalid user data"):
         self.message = message
         super().__init__(self.message)
 
 class UserUpdateError(Exception):
-    def __init__(self, message="Failed to update user."):
+    def __init__(self, message="Failed to update user"):
+        self.message = message
+        super().__init__(self.message)
+
+class DuplicateLoginError(Exception):
+    def __init__(self, message="Duplicate login attempt detected"):
         self.message = message
         super().__init__(self.message)
 
 # subject
 class SubjectNotFoundError(Exception):
-    def __init__(self, message="Subject not found."):
+    def __init__(self, message="Subject not found"):
         self.message = message
         super().__init__(self.message)
 
 class SubjectAlreadyExistsError(Exception):
-    def __init__(self, message="Subject already exists."):
+    def __init__(self, message="Subject already exists"):
         self.message = message
         super().__init__(self.message)
 
 class InvalidSubjectDataError(Exception):
-    def __init__(self, message="Invalid subject data."):
+    def __init__(self, message="Invalid subject data"):
         self.message = message
         super().__init__(self.message)
 
 class SubjectUpdateError(Exception):
-    def __init__(self, message="Failed to update subject."):
+    def __init__(self, message="Failed to update subject"):
         self.message = message
         super().__init__(self.message)
 
 class ColorExhaustedError(Exception):
-    def __init__(self, message="No more colors available in the COLOR_SET."):
+    def __init__(self, message="No more colors available in the COLOR_SET"):
         self.message = message
         super().__init__(self.message)
 
@@ -89,12 +99,12 @@ class InvalidScheduleDataError(Exception):
 
 #planner
 class BookSubjectMismatchError(Exception):
-    def __init__(self, message="The subject of the book and the subject of the to-do do not match."):
+    def __init__(self, message="The subject of the book and the subject of the to-do do not match"):
         self.message = message
         super().__init__(self.message)
 
 class TimeTableOverlapError(Exception):
-    def __init__(self, message="The time table is overlapping."):
+    def __init__(self, message="The time table is overlapping"):
         self.message = message
         super().__init__(self.message)
 
@@ -116,6 +126,6 @@ class SessionExpiredError(Exception):
 
 
 class DatabaseCommitError(Exception):
-    def __init__(self, message="Failed to commit to database."):
+    def __init__(self, message="Failed to commit to database"):
         self.message = message
         super().__init__(self.message)
