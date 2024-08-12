@@ -88,3 +88,4 @@ class AuthorizationService:
     def check_authorization(id: str, another_id: str):
         if id != another_id:
             raise UnauthorizedError
+

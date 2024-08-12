@@ -71,9 +71,9 @@ async def logout(request: Request):
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
-    except:
+    except Exception as e:
         return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})
     finally:
         db.close()

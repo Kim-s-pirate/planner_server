@@ -34,7 +34,7 @@ async def register(user_data: user_register):
         db.close()
 
 @router.get("/account/check_userid_available")
-async def check_userid_exists(userid: str = Query(None)):
+async def check_userid_available(userid: str = Query(None)):
     db = get_db()
     try:
         if user_service.is_userid_exists(userid, db):
@@ -47,8 +47,8 @@ async def check_userid_exists(userid: str = Query(None)):
     finally:
         db.close()
 
-@router.get("/account/check_email_exists")
-async def check_email_exists(email: str = Query(None)):
+@router.get("/account/check_email_available")
+async def check_email_available(email: str = Query(None)):
     db = get_db()
     try:
         if user_service.is_email_exists(email, db):

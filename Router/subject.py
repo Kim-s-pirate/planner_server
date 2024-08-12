@@ -47,8 +47,8 @@ async def subject_create(request: Request, subject_data: subject_register):
     finally:
         db.close()
 
-@router.get("/subject/check_title_exists")
-async def check_title_exists(request: Request, title: str = Query(None)):
+@router.get("/subject/check_title_available")
+async def check_title_available(request: Request, title: str = Query(None)):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
@@ -68,7 +68,7 @@ async def check_title_exists(request: Request, title: str = Query(None)):
     finally:
         db.close()
 
-@router.get("/subject/{id}")
+@router.get("/subject/id/{id}")
 async def get_subject_by_id(request: Request, id: str):
     db = get_db()
     try:
@@ -76,7 +76,7 @@ async def get_subject_by_id(request: Request, id: str):
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:
             raise UnauthorizedError
-        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        AuthorizationService.check_authorization(requester_id, found_subject.user_id)
         subject_data = subject_service.to_subject_data(found_subject)
         return JSONResponse(status_code=200, content={"message": subject_data.__dict__})
     except SessionIdNotFoundError as e:
@@ -147,7 +147,7 @@ async def get_subject_color(request: Request, id: str):
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:
             raise UnauthorizedError
-        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        AuthorizationService.check_authorization(requester_id, found_subject.user_id)
         return JSONResponse(status_code=200, content={"message": found_subject.color})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -190,7 +190,7 @@ async def edit_title(request: Request, new_title: subject_title, id: str):
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:
             raise UnauthorizedError
-        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        AuthorizationService.check_authorization(requester_id, found_subject.user_id)
         subject_service.edit_title(new_title.title, id, requester_id, db)
         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
     except SessionIdNotFoundError as e:
@@ -227,7 +227,7 @@ async def edit_color(request: Request, id: str, new_color: subject_color):
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:
             raise UnauthorizedError
-        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        AuthorizationService.check_authorization(requester_id, found_subject.user_id)
         subject_service.edit_color(new_color.color, id, requester_id, db)
         return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
     except SessionIdNotFoundError as e:
@@ -264,7 +264,7 @@ async def delete_subject_by_id(request: Request, id: str):
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:
             raise UnauthorizedError
-        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        AuthorizationService.check_authorization(requester_id, found_subject.user_id)
         result = subject_service.delete_subject_by_id(id, db)
         if not result:
             raise SubjectNotFoundError
