@@ -30,7 +30,7 @@ class subject_service:
             title=subject_entity.title,
             color=subject_entity.color
         )
-
+    ######################
     def create_subject(subject: subject, db):
         try:
             subject_service.check_title_exists(subject.title, subject.user_id, db)
@@ -43,52 +43,60 @@ class subject_service:
             raise DatabaseCommitError from e
 
     def find_subject_by_id(id: str, db):
-        subject_from_id = db.query(subject).filter(subject.id == id).first()
-        if not subject_from_id:
-            raise SubjectNotFoundError
-        return subject_from_id
+        return db.query(subject).filter(subject.id == id).first()
 
     def find_subject_by_title(title: str, user_id: str, db):
-        subject_from_title = db.query(subject).filter(subject.title == title, subject.user_id == user_id).first()
-        if not subject_from_title:
-            raise SubjectNotFoundError
-        return subject_from_title
+        return db.query(subject).filter(subject.title == title, subject.user_id == user_id).first()
 
     def find_subject_by_user_id(user_id: str, db):
-        subject_from_user_id = db.query(subject).filter(subject.user_id == user_id).all()
-        if not subject_from_user_id:
-            raise SubjectNotFoundError
-        return subject_from_user_id
+        return db.query(subject).filter(subject.user_id == user_id).all()
 
     def find_subject_by_color(color: str, user_id: str, db):
-        subject_from_color = db.query(subject).filter(subject.color == color, subject.user_id == user_id).first()
-        if not subject_from_color:
-            raise SubjectNotFoundError
-        return subject_from_color
+        return db.query(subject).filter(subject.color == color, subject.user_id == user_id).first()
 
-    def check_title_exists(title: str, user_id: str, db):
-        try:
-            subject_service.find_subject_by_title(title, user_id, db)
-            raise SubjectAlreadyExistsError
-        except SubjectNotFoundError:
-            pass
-        except SubjectAlreadyExistsError:
-            raise SubjectAlreadyExistsError(f"Subject '{title}' already exists.")
-        except Exception as e:
-            raise e
+    def is_title_exists(title: str, user_id: str, db):
+        return db.query(subject).filter(subject.title == title, subject.user_id == user_id).first() is not None
 
     def remain_color(user_id: str, db):
-        try:
-            used_color = set([subject.color for subject in subject_service.find_subject_by_user_id(user_id, db)])
-            return list(COLOR_SET - used_color)
-        except SubjectNotFoundError:
-            return list(COLOR_SET)
+        used_color = set([subject.color for subject in subject_service.find_subject_by_user_id(user_id, db)])
+        return list(COLOR_SET - used_color)
 
     def random_color(user_id: str, db):
         remain_color = subject_service.remain_color(user_id, db)
         if not remain_color:
             raise ColorExhaustedError
         return random.choice(remain_color)
+
+    def edit_title(new_title: str, id: str, user_id: str, db):
+        if subject_service.find_subject_by_title(new_title, user_id, db) is not None:
+            raise SubjectAlreadyExistsError
+        found_subject = subject_service.find_subject_by_id(id, db)
+        if not found_subject:
+            raise SubjectNotFoundError
+        found_subject.title = new_title
+        db.commit()
+
+    def edit_color(new_color: str, id: str, user_id: str, db):
+        if not new_color in COLOR_SET:
+            raise InvalidSubjectDataError
+        found_subject = subject_service.find_subject_by_color(new_color, user_id, db)
+        target_subject = subject_service.find_subject_by_id(id, db)
+        if not target_subject:
+            raise SubjectNotFoundError
+        if found_subject is not None:
+            found_subject.color = target_subject.color
+        target_subject.color = new_color
+        db.commit()
+
+    def delete_subject_by_id(id: str, db):
+        result = db.query(subject).filter(subject.id == id).delete()
+        db.commit()
+        return result
+
+    def delete_subject_by_title(title: str, user_id: str, db):
+        result = db.query(subject).filter(subject.title == title, subject.user_id == user_id).delete()
+        db.commit()
+        return result
 
     # def edit_subject(subject_data: subject_edit, id: str, user_id: str, db):
     #     try:
@@ -118,43 +126,3 @@ class subject_service:
     #     except Exception as e:
     #         db.rollback()
     #         raise SubjectUpdateError from e
-
-    def edit_subject_color(new_color: str, id: str, user_id: str, db):
-        try:
-            found_subject = subject_service.find_subject_by_color(new_color, user_id, db)
-            target_subject = subject_service.find_subject_by_id(id, db)
-            if found_subject is not None:
-                found_subject.color = target_subject.color
-            target_subject.color = new_color
-            db.commit()
-        except SubjectNotFoundError:
-            raise SubjectNotFoundError
-        except Exception as e:
-            db.rollback()
-            raise SubjectUpdateError from e
-
-    def delete_subject_by_id(id: str, db):
-        try:
-            result = db.query(subject).filter(subject.id == id).delete()
-            if result == False:
-                raise SubjectNotFoundError
-            db.commit()
-        except SubjectNotFoundError:
-            db.rollback()
-            raise
-        except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
-
-    def delete_subject_by_title(title: str, user_id: str, db):
-        try:
-            result = db.query(subject).filter(subject.title == title, subject.user_id == user_id).delete()
-            if result == False:
-                raise SubjectNotFoundError
-            db.commit()
-        except SubjectNotFoundError:
-            db.rollback()
-            raise
-        except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
