@@ -19,46 +19,52 @@ from dotenv import load_dotenv
 
 router = APIRouter()
 
-@router.post("/register/schedule")
-async def register_schedule(request: Request, schedule_data: day_schedule_register):
+@router.post("/schedule/create")
+async def schedule_create(request: Request, schedule_data: day_schedule_register):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         schedule_data = calendar_service.to_schedule_db(schedule_data, requester_id)
         calendar_service.create_schedule(schedule_data, db)
         return JSONResponse(status_code=200, content={"message": "Schedule registered successfully"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while registering the schedule"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=500, content={"message": "Schedule registration failed"})
     finally:
         db.close()
 
 @router.get("/day_schedule/{date}")
-async def get_day_schedule(request: Request,date: date):
+async def get_day_schedule(request: Request, date: date):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         schedule = calendar_service.find_schedule_by_date(date, requester_id, db)
+        if not schedule:
+            raise ScheduleNotFoundError
         schedule = calendar_service.to_schedule_data(schedule)
         schedule = calendar_service.schedule_to_dict(schedule)
         return JSONResponse(status_code=200, content={"schedule": schedule})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except ScheduleNotFoundError:
+    except ScheduleNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "Schedule not found"})
     except Exception as e:
-        print(e)
-        return JSONResponse(status_code=500, content={"message": "There was some error while getting the schedule"})
+        return JSONResponse(status_code=500, content={"message": "Schedule find failed"})
     finally:
         db.close()
 
@@ -68,21 +74,23 @@ async def get_month_schedule(request: Request, year: str, month: str):
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         schedule = calendar_service.find_schedule_by_month(year, month, requester_id, db)
+        if not schedule:
+            raise ScheduleNotFoundError
         schedule = [calendar_service.to_schedule_data(s) for s in schedule]
         schedule = [calendar_service.schedule_to_dict(s) for s in schedule]
         for s in schedule:
             del s['user_id']
         return JSONResponse(status_code=200, content={"message": schedule})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except ScheduleNotFoundError:
+    except ScheduleNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "Schedule not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while getting the schedule"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Schedule find failed"})
     finally:
         db.close()
 
@@ -91,19 +99,27 @@ async def delete_schedule(request: Request, date: date):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        calendar_service.delete_schedule_by_date(date, requester_id, db)
+        result = calendar_service.delete_schedule_by_date(date, requester_id, db)
+        if not result:
+            raise ScheduleNotFoundError
         return JSONResponse(status_code=200, content={"message": "Schedule deleted successfully"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except ScheduleNotFoundError:
+    except ScheduleNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=404, content={"message": "Schedule not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while deleting the schedule"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=500, content={"message": "Schedule delete failed"})
     finally:
         db.close()
 
@@ -112,21 +128,49 @@ async def delete_schedule(request: Request, year: str, month: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        calendar_service.delete_schedule_by_month(year, month, requester_id, db)
+        result = calendar_service.delete_schedule_by_month(year, month, requester_id, db)
+        if not result:
+            raise ScheduleNotFoundError
         return JSONResponse(status_code=200, content={"message": "Schedule deleted successfully"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except ScheduleNotFoundError:
+    except ScheduleNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=404, content={"message": "Schedule not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while deleting the schedule"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=500, content={"message": "Schedule delete failed"})
     finally:
         db.close()
+
+
+
+
+
+
+
+
+
+
+
+        #########################3
+
+
+
+
+
+
+
+        
 
 @router.post("/register/goal")
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
