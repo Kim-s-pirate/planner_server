@@ -33,14 +33,12 @@ class subject_service:
     ######################
     def create_subject(subject: subject, db):
         try:
-            subject_service.check_title_exists(subject.title, subject.user_id, db)
+            if subject_service.is_title_exists(subject.title, subject.user_id, db):
+                raise SubjectAlreadyExistsError
             db.add(subject)
             db.commit()
-        except SubjectAlreadyExistsError:
-            raise
         except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
+            raise e
 
     def find_subject_by_id(id: str, db):
         return db.query(subject).filter(subject.id == id).first()

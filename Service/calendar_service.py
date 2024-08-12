@@ -35,10 +35,10 @@ class calendar_service:
             "date": schedule_data.date.isoformat(),
             "task_list": [task.to_dict(t) for t in schedule_data.task_list]
         }
-
+    ##########################3
     def create_schedule(schedule: schedule, db):
         try:
-            calendar_service.clean_day_schedule(schedule.date, schedule.user_id, db)
+            calendar_service.delete_schedule_by_date(schedule.date, schedule.user_id, db)
             ########## 직접 테스트로 하나로 확정
             # if isinstance(schedule.task_list, str):
             #     task_list = [task.from_dict(t) for t in json.loads(schedule.task_list)]
@@ -55,85 +55,52 @@ class calendar_service:
             db.add(schedule)
             db.commit()
         except Exception as e:
-            db.rollback()
-            raise e
-
-    def clean_day_schedule(date: date, user_id: str, db):
-        try:
-            calendar_service.delete_schedule_by_date(date, user_id, db)
-        except ScheduleNotFoundError:
-            pass
-        except Exception as e:
             raise e
 
     def find_schedule_by_month(year: str, month: str, user_id: str, db):
-        try:
-            schedule_from_month = db.query(schedule).filter(
-                extract('year', schedule.date) == year,
-                extract('month', schedule.date) == month,
-                schedule.user_id == user_id
-            ).all()
-            if not schedule_from_month:
-                raise ScheduleNotFoundError
-            formatted_results = [
-                schedule(
-                    date=date_service.get_date(result.date),
-                    user_id=result.user_id,
-                    task_list=result.task_list,
-                )
-                for result in schedule_from_month
-            ]
-            return formatted_results
-        except ScheduleNotFoundError:
-            raise
-        except Exception as e:
-            raise e
+        found_schedules = db.query(schedule).filter(
+            extract('year', schedule.date) == year,
+            extract('month', schedule.date) == month,
+            schedule.user_id == user_id
+        ).all()
+        if not found_schedules:
+            return None
+        return [
+            schedule(
+                date=date_service.get_date(result.date),
+                user_id=result.user_id,
+                task_list=result.task_list,
+            )
+            for result in found_schedules
+        ]
 
     def find_schedule_by_date(date: date, user_id: str, db):
-        schedule_from_date = db.query(schedule).filter(schedule.date == date, schedule.user_id == user_id).first()
-        if not schedule_from_date:
-            raise ScheduleNotFoundError
-        schedule_from_date.date = date_service.get_date(schedule_from_date.date)
-        return schedule_from_date
+        found_schedule = db.query(schedule).filter(schedule.date == date, schedule.user_id == user_id).first()
+        if not found_schedule:
+            return None
+        found_schedule.date = date_service.get_date(found_schedule.date)
+        return found_schedule
 
     def delete_schedule_by_date(date: date, user_id: str, db):
-        try:
-            result = db.query(schedule).filter(schedule.date == date, schedule.user_id == user_id).delete()
-            if result == False:
-                raise ScheduleNotFoundError
-            db.commit()
-        except ScheduleNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
+        result = db.query(schedule).filter(schedule.date == date, schedule.user_id == user_id).delete()
+        db.commit()
+        return result
 
     def delete_schedule_by_month(year: str, month: str, user_id: str, db):
-        try:
-            result = db.query(schedule).filter(
-                extract('year', schedule.date) == year,
-                extract('month', schedule.date) == month,
-                schedule.user_id == user_id
-            ).delete()
-            if result == False:
-                raise ScheduleNotFoundError
-            db.commit()
-        except ScheduleNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
-
-
-    #####################
+        result = db.query(schedule).filter(
+            extract('year', schedule.date) == year,
+            extract('month', schedule.date) == month,
+            schedule.user_id == user_id
+        ).delete()
+        db.commit()
+        return result
 
 
 
 
 
 
-
-
+###############################3
 
 
 
