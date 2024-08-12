@@ -37,8 +37,8 @@ async def register(user_data: user_register):
 async def check_userid_exists(userid: str = Query(None)):
     db = get_db()
     try:
-        if not user_service.is_userid_exists(userid, db):
-            return JSONResponse(status_code=409, content={"message": "User already exists"})
+        if user_service.is_userid_exists(userid, db):
+            return JSONResponse(status_code=409, content={"message": "Userid already exists"})
         return JSONResponse(status_code=200, content={"message": "Userid is available"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "User check failed"})
@@ -49,9 +49,9 @@ async def check_userid_exists(userid: str = Query(None)):
 async def check_email_exists(email: str = Query(None)):
     db = get_db()
     try:
-        if not user_service.is_email_exists(email, db):
-            return JSONResponse(status_code=409, content={"message": "User already exists"})
-        return JSONResponse(status_code=200, content={"message": "Userid is available"})
+        if user_service.is_email_exists(email, db):
+            return JSONResponse(status_code=409, content={"message": "Email already exists"})
+        return JSONResponse(status_code=200, content={"message": "Email is available"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "User check failed"})
     finally:

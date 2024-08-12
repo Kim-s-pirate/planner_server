@@ -16,47 +16,53 @@ from Service.error import *
 
 router = APIRouter()
 
-@router.post("/register/subject")
-async def subject_register(request: Request, subject_data: subject_register):
+@router.post("/subject/create")
+async def subject_create(request: Request, subject_data: subject_register):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         subject_data = subject_service.to_subject_db(subject_data, requester_id)
         subject_service.create_subject(subject_data, db)
         return JSONResponse(status_code=201, content={"message": "Subject registered successfully"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
     except ColorExhaustedError as e:
-        return JSONResponse(status_code=507, content={"message": e.message})
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=507, content={"message": "No more colors available in the color set"})
     except SubjectAlreadyExistsError as e:
-        return JSONResponse(status_code=409, content={"message": e.message})
-    except:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Subject already exists"})
+    except Exception as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=500, content={"message": "Subject registration failed"})
     finally:
         db.close()
 
 @router.get("/subject/check_title_exists")
-async def check_title_exists(request: Request, title: str):
+async def check_title_exists(request: Request, title: str = Query(None)):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        subject_service.check_title_exists(title, requester_id, db)
+        if subject_service.is_title_exists(title, requester_id, db):
+            return JSONResponse(status_code=409, content={"message": "Title already exists"})
         return JSONResponse(status_code=200, content={"message": "Title is available"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectAlreadyExistsError as e:
-        return JSONResponse(status_code=409, content={"message": e.message})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while checking the subject"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Subject check failed"})
     finally:
         db.close()
 
@@ -66,43 +72,45 @@ async def get_subject_by_id(request: Request, id: str):
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_subject = subject_service.find_subject_by_id(id, db)
-        if requester_id != found_subject.user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
+        if not found_subject:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_subject.id)
         subject_data = subject_service.to_subject_data(found_subject)
         return JSONResponse(status_code=200, content={"message": subject_data.__dict__})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the subject"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Subject find failed"})
     finally:
         db.close()
 
-# 통합 검색 기능 구현 필요
-
+# 통합 검색 기능으로 리팩토링
 @router.get("/search/subject/{title}")
 async def get_subject_by_title(request: Request, title: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_subject = subject_service.find_subject_by_title(title, requester_id, db)
+        if not found_subject:
+            raise SubjectNotFoundError
         subject_data = subject_service.to_subject_data(found_subject)
         return JSONResponse(status_code=200, content={"message": subject_data.__dict__})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
+    except SubjectNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the subject"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Subject find failed"})
     finally:
         db.close()
 
@@ -112,41 +120,43 @@ async def get_subject_list(request: Request):
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_subject = subject_service.find_subject_by_user_id(requester_id, db)
-        ####################
-        data = {"userid": userid, "subjects": [subject_service.to_subject_data(subject).title for subject in found_subject]}
+        if not found_subject:
+            raise SubjectNotFoundError
+        data = {"subjects": [subject_service.to_subject_data(subject).title for subject in found_subject]}
         return JSONResponse(status_code=200, content={"message": data})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
+    except SubjectNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the subject"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Subject find failed"})
     finally:
         db.close()
 
 @router.get("/subject/subject_color/{id}")
-async def get_get_subject_color(request: Request, id: str):
+async def get_subject_color(request: Request, id: str):
     db = get_db()
     try:
-        requester_id = AuthorizationService.verify_session(request, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_subject = subject_service.find_subject_by_id(id, db)
-        if requester_id != found_subject.user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
+        if not found_subject:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_subject.id)
         return JSONResponse(status_code=200, content={"message": found_subject.color})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the color"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Color find failed"})
     finally:
         db.close()
 
@@ -157,18 +167,127 @@ async def remain_color(request: Request):
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         remain_color = subject_service.remain_color(requester_id, db)
         return JSONResponse(status_code=200, content={"message": remain_color})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the color"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Color find failed"})
     finally:
         db.close()
+
+@router.post("/edit/subject_title/{id}")
+async def edit_title(request: Request, id: str, new_title: subject_title):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_subject = subject_service.find_subject_by_id(id, db)
+        if not found_subject:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        subject_service.edit_title(new_title.title, id, requester_id, db)
+        return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
+    except SubjectAlreadyExistsError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Subject already exists"})
+    except SubjectNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Subject not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=500, content={"message": "Subject edit failed"})
+    finally:
+        db.close()
+
+@router.post("/edit/subject_color/{id}")
+async def edit_color(request: Request, id: str, new_color: subject_color):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_subject = subject_service.find_subject_by_id(id, db)
+        if not found_subject:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        subject_service.edit_color(new_color.color, id, requester_id, db)
+        return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
+    except InvalidSubjectDataError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Invalid subject data"})
+    except SubjectNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Subject not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=500, content={"message": "Subject edit failed"})
+    finally:
+        db.close()
+
+@router.delete("/delete/subject/{id}")
+async def delete_subject_by_id(request: Request, id: str):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_subject = subject_service.find_subject_by_id(id, db)
+        if not found_subject:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_subject.id)
+        result = subject_service.delete_subject_by_id(id, db)
+        if not result:
+            raise SubjectNotFoundError
+        return JSONResponse(status_code=200, content={"message": "Subject deleted successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
+    except SubjectNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Subject not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=500, content={"message": "Subject delete failed"})
+    finally:
+        db.close()
+
 
 # @router.post("/edit/subject/{id}")
 # async def edit_subject_by_id(request: Request, subject_data: subject_edit, id: str):
@@ -193,100 +312,6 @@ async def remain_color(request: Request):
 #         return JSONResponse(status_code=500, content={"message": "There was some error while editing the subject"})
 #     finally:
 #         db.close()
-
-@router.post("/edit/subject_title/{id}")
-async def edit_title(request: Request, id: str, new_title: subject_title):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        requester_id = AuthorizationService.verify_session(request, db)["id"]
-        if requester_id != subject_service.find_subject_by_id(id, db).user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
-        subject_service.edit_subject_title(new_title.title, id, db)
-        return JSONResponse(status_code=200, content={"message": "Subject edited successfully"})
-    except SessionIdNotFoundError:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while editing the subject"})
-    finally:
-        db.close()
-
-@router.post("/edit/subject_color/{id}")#색이 set에 존재하는 색인지 확인, 그리고 이미 사용하는 책이 없는지 확인
-async def edit_color(request: Request, id: str, new_color: subject_color):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        requester_id = AuthorizationService.verify_session(request, db)["id"]
-        if requester_id != subject_service.find_subject_by_id(id, db).user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
-        if not new_color.color in COLOR_SET:
-            return JSONResponse(status_code=400, content={"message": "Color not found in color set"})
-        subject_service.edit_subject_color(new_color.color, id, requester_id, db)
-        return JSONResponse(status_code=200, content={"message": "Subject color edited successfully"})
-    except SessionIdNotFoundError:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while editing the subject"})
-    finally:
-        db.close()
-
-@router.delete("/delete/subject/{id}")
-async def delete_subject_by_id(request: Request, id: str):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        requester_id = AuthorizationService.verify_session(request, db)
-        if requester_id != subject_service.find_subject_by_id(id, db).user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this subject"})
-        subject_service.delete_subject_by_id(id, db)
-        return JSONResponse(status_code=200, content={"message": "Subject deleted successfully"})
-    except SessionIdNotFoundError:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while deleting the subject"})
-    finally:
-        db.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #@router.post("/edit_subject/{subject}")
