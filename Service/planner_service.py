@@ -148,6 +148,10 @@ class planner_service:
         db.commit()
 
 
+    def find_result_by_data(result_data: result_register, user_id: str, db):
+        return db.query(result).filter(result.date == result_data.date, result.user_id == user_id, result.book_id == result_data.book_id).first()
+
+
         
 
     def find_planner_by_date(date: date, user_id: str, db):
@@ -187,12 +191,12 @@ class planner_service:
         if total != union_total:
             raise TimeTableOverlapError
         
-        book_id_list = book_service.book_id_list(user_id, db)
+        book_id_list = book_service.find_book_id_list(user_id, db)
         for to_do in planner_data.to_do_list:
             if to_do.book_id not in book_id_list:
                 raise BookNotFoundError
             
-        subject_id_list = subject_service.subject_id_list(user_id, db)
+        subject_id_list = subject_service.find_subject_id_list(user_id, db)
         for time_table in planner_data.time_table_list:
             if time_table.subject_id not in subject_id_list:
                 raise SubjectNotFoundError
@@ -201,8 +205,10 @@ class planner_service:
             if result.book_id not in book_id_list:
                 raise BookNotFoundError
             book = book_service.find_book_by_id(result.book_id, db)
-            if book.start_page > result.page or book.end_page < result.page:
-                raise PageError
+            max_page = max(result.page)
+            min_page = min(result.page)
+            if book.end_page < max_page or book.start_page > min_page:
+                raise PageRangeError
             
         return planner_data
     

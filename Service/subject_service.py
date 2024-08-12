@@ -95,6 +95,10 @@ class subject_service:
         result = db.query(subject).filter(subject.title == title, subject.user_id == user_id).delete()
         db.commit()
         return result
+    
+    def find_subject_id_list(user_id: str, db):
+        subject_list = db.query(subject).filter(subject.user_id == user_id).all()
+        return [subject.id for subject in subject_list]
 
     # def edit_subject(subject_data: subject_edit, id: str, user_id: str, db):
     #     try:
