@@ -53,7 +53,7 @@ async def check_title_exists(request: Request, title: str = Query(None)):
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         if subject_service.is_title_exists(title, requester_id, db):
-            return JSONResponse(status_code=409, content={"message": "Title already exists"})
+            raise SubjectNotFoundError
         return JSONResponse(status_code=200, content={"message": "Title is available"})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -61,6 +61,8 @@ async def check_title_exists(request: Request, title: str = Query(None)):
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
     except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except SubjectNotFoundError as e:
+        return JSONResponse(status_code=409, content={"message": "Subject already exists"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "Subject check failed"})
     finally:
@@ -179,7 +181,7 @@ async def remain_color(request: Request):
         db.close()
 
 @router.post("/edit/subject_title/{id}")
-async def edit_title(request: Request, id: str, new_title: subject_title):
+async def edit_title(request: Request, new_title: subject_title, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))

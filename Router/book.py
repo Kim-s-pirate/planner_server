@@ -13,48 +13,54 @@ from Service.book_service import *
 
 router = APIRouter()
 
-@router.post("/register/book")
-async def register_book(request: Request, book_data: book_register):
+@router.post("/book/register")
+async def book_register(request: Request, book_data: book_register):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         book_data = book_service.to_book_db(book_data, requester_id)
-        book_service.create_book(book_data, db)
+        book_service.register_book(book_data, db)
         return JSONResponse(status_code=201, content={"message": "Book registered successfully"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookAlreadyExistsError:
+    except BookAlreadyExistsError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=302, content={"message": "Book already exists"})
-    except:
+    except Exception as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=500, content={"message": "Book registration failed"})
     finally:
         db.close()
 
 @router.get("/book/check_title_exists")
-async def duplicate_subject(request: Request, title: str):
+async def check_title_exists(request: Request, title: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        book_service.check_title_exists(title, requester_id, db)
+        if book_service.is_title_exists(title, requester_id, db):
+            raise BookAlreadyExistsError
         return JSONResponse(status_code=200, content={"message": "Title is available"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookAlreadyExistsError:
+    except BookAlreadyExistsError as e:
         return JSONResponse(status_code=302, content={"message": "Book already exists"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while checking the subject"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Book check failed"})
     finally:
         db.close()
-
 
 @router.get("/book/{id}")
 async def get_book_by_id(request: Request, id: str):
@@ -62,11 +68,11 @@ async def get_book_by_id(request: Request, id: str):
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_book = book_service.find_book_by_id(id, db)
-        if requester_id != found_book.user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-        ###############
-        user = user_service.find_user_by_id(book.user_id, db)
-        subject = subject_service.find_subject_by_id(book.subject_id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        user = user_service.find_user_by_id(found_book.user_id, db)
+        subject = subject_service.find_subject_by_id(found_book.subject_id, db)
         user = user_service.to_user_data(user).__dict__
         subject = subject_service.to_subject_data(subject).__dict__
         found_book = book_service.to_book_data(found_book).__dict__
@@ -75,16 +81,16 @@ async def get_book_by_id(request: Request, id: str):
         del found_book['subject_id']
         del found_book['user_id']
         return JSONResponse(status_code=200, content={"message": found_book})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the book"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Book find failed"})
     finally:
         db.close()
 
@@ -94,43 +100,46 @@ async def get_book_subject(request: Request, id: str):
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_book = book_service.find_book_by_id(id, db)
-        if requester_id != found_book.user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-        return JSONResponse(status_code=200, content={"message": found_book})
-    except SessionIdNotFoundError:
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        book_subject = subject_service.find_subject_by_id(found_book.subject_id, db).title
+        return JSONResponse(status_code=200, content={"message": book_subject})
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the book"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Book find failed"})
     finally:
         db.close()
 
-# book_list 쿼리 파라미터로 통합 필요
 @router.get("/book/book_list")
-async def book_list(request: Request):
+async def get_book_list(request: Request):
     db = get_db()
     try:
-        requester_id = AuthorizationService.verify_session(request, db)
-        books = book_service.find_book_by_user_id(requester_id, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_user_id(requester_id, db)
+        if not found_book:
+            raise BookNotFoundError
         book_list = []
-        for book_entity in books:
+        for book_entity in found_book:
             book_list.append(book_service.to_book_data(book_entity).__dict__)
         return JSONResponse(status_code=200, content={"message": book_list})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
+    except BookNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the book list"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Book find failed"})
     finally:
         db.close()
 
@@ -138,33 +147,33 @@ async def book_list(request: Request):
 async def book_list_by_subject(request: Request, subject_id: str):
     db = get_db()
     try:
-        requester_id = AuthorizationService.verify_session(request, db)
-        subject = subject_service.find_subject_by_id(subject_id, db)
-        if requester_id != subject.user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book list"})
-        ####################
-        books = book_service.find_book_by_subject_id(subject_id, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        book_subject = subject_service.find_subject_by_id(subject_id, db)
+        if not book_subject:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, book_subject.user_id)
+        found_book = book_service.find_book_by_subject_id(subject_id, db)
         data = {
-            'subject': subject_service.to_subject_data(subject).__dict__,
+            'subject': subject_service.to_subject_data(book_subject).__dict__,
         }
         book_list = []
-        for book_entity in books:
+        for book_entity in found_book:
             book = book_service.to_book_data(book_entity).__dict__
             del book['user_id']
             del book['subject_id']
             book_list.append(book)
         data['books'] = book_list
         return JSONResponse(status_code=200, content={"message": data})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except:
-        return JSONResponse(status_code=500, content={"message": "There was some error while viewing the book list"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Book find failed"})
     finally:
         db.close()
 
@@ -172,24 +181,20 @@ async def book_list_by_subject(request: Request, subject_id: str):
 async def book_list_by_status(request: Request, status: bool):
     db = get_db()
     try:
-        requester_id = AuthorizationService.verify_session(request, db)
-        books = book_service.find_book_by_status(status, requester_id, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_status(status, requester_id, db)
         book_list = []
-        for book_entity in books:
+        for book_entity in found_book:
             book_list.append(book_service.to_book_data(book_entity).__dict__)
         return JSONResponse(status_code=200, content={"message": book_list})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=409, content={"message": "There was some error while viewing the book list"})
+    except Exception as e:
+        return JSONResponse(status_code=409, content={"message": "Book find failed"})
     finally:
         db.close()
 
@@ -198,7 +203,7 @@ async def book_list_by_status(request: Request, status: bool):
 async def book_search(request: Request, keyword: str):
     db = get_db()
     try:
-        requester_id = AuthorizationService.verify_session(request, db)
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
         books = book_service.find_book_by_partial_title(keyword, requester_id, db)
         book_list = []
         for book_entity in books:
@@ -214,76 +219,273 @@ async def book_search(request: Request, keyword: str):
             unique_books[book['id']] = book
         book_list = list(unique_books.values())
         return JSONResponse(status_code=200, content={"message": book_list})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except:
-        return JSONResponse(status_code=409, content={"message": "There was some error while searching the book list"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book find failed"})
     finally:
         db.close()
 
-@router.post("/edit/book/{id}")
-async def edit_book_by_id(request: Request, book_data: book_edit, id: str):
+@router.post("/edit/book_title/{id}")
+async def edit_title(request: Request, book_data: book_title, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         found_book = book_service.find_book_by_id(id, db)
-        if requester_id != found_book.user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-        book_service.edit_book(book_data, id, requester_id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        book_service.edit_title(book_data.title, id, requester_id, db)
         return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
-    except SessionIdNotFoundError:
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except BookAlreadyExistsError:
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+    except BookAlreadyExistsError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=302, content={"message": "Book already exists"})
-    except SubjectNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Subject not found"})
-    except NegativePageNumberError:
-        return JSONResponse(status_code=400, content={"message": "Page number cannot be negative"})
-    except PageRangeError:
-        return JSONResponse(status_code=400, content={"message": "Start page cannot be greater than end page"})
-    except:
-        return JSONResponse(status_code=409, content={"message": "There was some error while editing the book"})
+    except BookNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book edit failed"})
     finally:
         db.close()
 
-@router.delete("/delete/book/{id}")
-async def book_delete_by_id(request: Request, id: str):
+@router.post("/edit/book_subject_id/{id}")
+async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        if requester_id != book_service.find_book_by_id(id, db).user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this book"})
-        book_service.delete_book_by_id(id, db)
-        return JSONResponse(status_code=200, content={"message": "Book deleted successfully"})
-    except SessionIdNotFoundError:
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        book_service.edit_subject_id(book_data.subject_id, id, db)
+        return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError:
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError:
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except BookNotFoundError:
-        return JSONResponse(status_code=404, content={"message": "Book not found"})
-    except:
-        return JSONResponse(status_code=409, content={"message": "There was some error while deleting the book"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+    except SubjectNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Subject not found"})
+    except BookAlreadyExistsError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=302, content={"message": "Book already exists"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book edit failed"})
     finally:
         db.close()
 
+@router.post("/edit/book_page/{id}")
+async def edit_page(request: Request, book_data: book_page, id: str):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        book_service.edit_page(book_data.start_page, book_data.end_page, id, db)
+        return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+    except NegativePageNumberError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Page number cannot be negative"})
+    except PageRangeError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Start page cannot be greater than end page"})
+    except BookNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book edit failed"})
+    finally:
+        db.close()
+
+@router.post("/edit/book_memo/{id}")
+async def edit_memo(request: Request, book_data: book_memo, id: str):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        book_service.edit_memo(book_data.memo, id, db)
+        return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+    except BookNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book edit failed"})
+    finally:
+        db.close()
+
+@router.post("/edit/book_status/{id}")
+async def edit_status(request: Request, book_data: book_status, id: str):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        book_service.edit_status(book_data.status, id, db)
+        return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+    except BookNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book edit failed"})
+    finally:
+        db.close()
+
+#######################
+@router.delete("/delete/book/{id}")
+async def delete_book(request: Request, id: str):
+    db = get_db()
+    try:
+        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+        db.execute(text("SAVEPOINT savepoint"))
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        result = book_service.delete_book_by_id(id, db)
+        if not result:
+            raise BookNotFoundError
+        return JSONResponse(status_code=200, content={"message": "Book deleted successfully"})
+    except SessionIdNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this book"})
+    except BookNotFoundError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Book delete failed"})
+    finally:
+        db.close()
+
+
+@router.get("/subject_book_list")
+async def subject_book_list(request: Request):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        subjects = subject_service.find_subject_by_user_id(requester_id, db)
+        subject_list = []
+        data = {}
+        for subject_entity in subjects:
+            subject = subject_service.to_subject_data(subject_entity).__dict__
+            del subject['user_id']
+            subject_list.append(subject)
+        books = book_service.find_book_by_status(True, requester_id, db)
+        book_list = []
+        for book_entity in books:
+            book = book_service.to_book_data(book_entity).__dict__
+            del book['user_id']
+            del book['subject_id']
+            book_list.append(book)
+        data['subjects'] = subject_list
+        data['books'] = book_list
+        return JSONResponse(status_code=200, content={"message": data})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except Exception as e:
+        return JSONResponse(status_code=409, content={"message": "Book find failed"})
+    finally:
+        db.close()
 
 
 
@@ -406,72 +608,3 @@ async def book_delete_by_id(request: Request, id: str):
 
 #     finally:
 #         db.close()
-
-
-@router.delete("/book_delete/{book_id}")
-async def book_delete_by_id(request: Request, book_id: str):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        db.execute(text("SAVEPOINT savepoint"))
-
-        session = AuthorizationService.verify_session(request, db)
-        user_id = session['id']
-        if book_service.find_book_by_id(book_id, db).user_id != user_id:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to delete this book"})
-        book_service.delete_book_by_id(book_id, db)
-        db.commit()
-        return JSONResponse(status_code=200, content={"message": "Book deleted successfully"})
-
-    except SessionIdNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-
-    except SessionVerificationError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-
-    except Exception as e:
-        raise e
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=500, content={"message": "There was some error while deleting the book"})
-
-    finally:
-        db.close()
-
-@router.get("/subject_book_list")
-async def subject_book_list(request: Request):
-    db = get_db()
-    try:
-        session = AuthorizationService.verify_session(request, db)
-        user_id = session['id']
-        subjects = subject_service.find_subject_by_user_id(user_id, db)
-        subject_list = []
-        data = {}
-        for subject_entity in subjects:
-            subject = subject_service.to_subject_data(subject_entity).__dict__
-            del subject['user_id']
-            subject_list.append(subject)
-        books = book_service.find_book_by_status(True, user_id, db)
-        book_list = []
-        for book_entity in books:
-            book = book_service.to_book_data(book_entity).__dict__
-            del book['user_id']
-            del book['subject_id']
-            book_list.append(book)
-        data['subjects'] = subject_list
-        data['books'] = book_list
-
-        return JSONResponse(status_code=200, content={"message": data})
-
-    except SessionIdNotFoundError as e:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-
-    except SessionVerificationError as e:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": "There was some error while checking the subject list"})
-
-    finally:
-        db.close()

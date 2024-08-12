@@ -42,195 +42,102 @@ class book_service:
             initial=book_entity.initial
         )
 
-    def create_book(book: book, db):
+    def register_book(book: book, db):
         try:
-            book_service.check_title_exists(book.title, book.user_id, db)
+            if book_service.is_title_exists(book.title, book.user_id, db):
+                raise BookAlreadyExistsError
             db.add(book)
             db.commit()
-        except BookAlreadyExistsError:
-            raise
         except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
+            raise e
 
-    def find_book_by_id(id: int, db):
-        book_from_id = db.query(book).filter(book.id == id).first()
-        if not book_from_id:
-            raise BookNotFoundError
-        return book_from_id
+    def find_book_by_id(id: str, db):
+        return db.query(book).filter(book.id == id).first()
 
     def find_book_by_title(title: str, user_id: str, db):
-        book_from_title = db.query(book).filter(book.title == title, book.user_id == user_id).first()
-        if not book_from_title:
-            raise BookNotFoundError
-        return book_from_title
+        return db.query(book).filter(book.title == title, book.user_id == user_id).first()
 
     def find_book_by_partial_title(partial_title: str, user_id: str, db):
-        search_pattern = f"%{partial_title}%"
-        book_from_partial_title = db.query(book).filter(book.title.like(search_pattern), book.user_id == user_id).all()
-        if not book_from_partial_title:
-            raise BookNotFoundError
-        return book_from_partial_title
+        return db.query(book).filter(book.title.like(f"%{partial_title}%"), book.user_id == user_id).all()
 
     def find_book_by_user_id(user_id: str, db):
-        book_from_user_id = db.query(book).filter(book.user_id == user_id).all()
-        if not book_from_user_id:
-            raise BookNotFoundError
-        return book_from_user_id
+        return db.query(book).filter(book.user_id == user_id).all()
 
     def find_book_by_subject_id(subject_id: str, db):
-        book_from_subject_id = db.query(book).filter(book.subject_id == subject_id).all()
-        if not book_from_subject_id:
-            raise BookNotFoundError
-        return book_from_subject_id
+        return db.query(book).filter(book.subject_id == subject_id).all()
 
     def find_book_by_subject(title: str, user_id, db):
-        try:
-            subject_id = subject_service.find_subject_by_title(title, user_id, db).id
-            found_book = book_service.find_book_by_subject_id(subject_id, db)
-            return found_book
-        except SubjectNotFoundError:
-            raise
-        except BookNotFoundError:
-            raise
+        subject = subject_service.find_subject_by_title(title, user_id, db)
+        if not subject:
+            return None
+        return book_service.find_book_by_subject_id(subject.id, db)
 
+    def find_book_id_list(user_id: str, db):
+        book_list = db.query(book).filter(book.user_id == user_id).all()
+        return [book.id for book in book_list]
 
     def find_book_by_status(status: bool, user_id: str, db):
-        book_from_status = db.query(book).filter(book.status == status, book.user_id == user_id).all()
-        if not book_from_status:
-            raise BookNotFoundError
-        return book_from_status
+        return db.query(book).filter(book.status == status, book.user_id == user_id).all()
 
     def find_book_by_initial(initial: str, user_id: str, db):
-        book_from_initial = db.query(book).filter(book.initial.like(f"%{initial}%"), book.user_id == user_id).all()
-        if not book_from_initial:
-            raise BookNotFoundError
-        return book_from_initial
+        return db.query(book).filter(book.initial.like(f"%{initial}%"), book.user_id == user_id).all()
 
-    def check_title_exists(title: str, user_id: str, db):
-        try:
-            book_service.find_book_by_title(title, user_id, db)
+    def is_title_exists(title: str, user_id: str, db):
+        return db.query(book).filter(book.title == title, book.user_id == user_id).first() is not None
+
+    def edit_title(new_title: str, id: str, user_id: str, db):
+        if book_service.is_title_exists(new_title, user_id, db):
             raise BookAlreadyExistsError
-        except BookNotFoundError:
-            pass
-        except BookAlreadyExistsError:
-            raise BookAlreadyExistsError(f"Book '{title}' already exists.")
-        except Exception as e:
-            raise e
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise BookNotFoundError
+        found_book.title = new_title
+        db.commit()
 
-    # 각 서비스에서 반복적인 db 쿼리를 실행해서 이런 형식 말고 독립적으로 만드는 것도 좋을듯
-    def edit_book(book_data: book_edit, id: str, user_id: str, db):
-        try:
-            book_service.edit_book_title(book_data.title, id, user_id, db)
-            book_service.edit_book_subject_id(book_data.subject_id, id, db)
-            book_service.edit_book_page(book_data.start_page, book_data.end_page, id, db)
-            book_service.edit_book_memo(book_data.memo, id, db)
-            book_service.edit_book_status(book_data.status, id, db)
-        except BookAlreadyExistsError:
-            raise
-        except BookNotFoundError:
-            raise
-        except SubjectNotFoundError:
-            raise
-        except NegativePageNumberError:
-            raise
-        except PageRangeError:
-            raise
-        except BookUpdateError:
-            raise
-        except Exception as e:
-            raise e
+    def edit_subject_id(new_subject_id: str, id: str, db):
+        if subject_service.find_subject_by_id(new_subject_id, db) is None:
+            raise SubjectNotFoundError
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise BookNotFoundError
+        found_book.subject_id = new_subject_id
+        db.commit()
 
-    def edit_book_title(new_title: str, id: str, user_id: str, db):
-        try:
-            book_service.check_title_exists(new_title, user_id, db)
-            found_book = book_service.find_book_by_id(id, db)
-            found_book.title = new_title
-            db.commit()
-        except BookAlreadyExistsError:
-            raise
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise BookUpdateError from e
+    def edit_page(new_start_page: int, new_end_page: int, id: str, db):
+        if new_start_page < 0 or new_end_page < 0:
+            raise NegativePageNumberError
+        if new_start_page > new_end_page:
+            raise PageRangeError
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise BookNotFoundError
+        found_book.start_page = new_start_page
+        found_book.end_page = new_end_page
+        db.commit()
 
-    def edit_book_subject_id(new_subject_id: str, id: str, db):
-        try:
-            subject_service.find_subject_by_id(new_subject_id, db)
-            found_book = book_service.find_book_by_id(id, db)
-            found_book.subject_id = new_subject_id
-            db.commit()
-        except SubjectNotFoundError:
-            raise
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise BookUpdateError from e
+    def edit_memo(new_memo: str, id: str, db):
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise BookNotFoundError
+        found_book.memo = new_memo
+        db.commit()
 
-    def edit_book_page(new_start_page: int, new_end_page: int, id: str, db):
-        try:
-            book_service.check_page_validity(new_start_page, new_end_page)
-            found_book = book_service.find_book_by_id(id, db)
-            found_book.start_page = new_start_page
-            found_book.end_page = new_end_page
-            db.commit()
-        except NegativePageNumberError:
-            raise
-        except PageRangeError:
-            raise
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise BookUpdateError from e
+    def edit_status(new_status: bool, id: str, db):
+        found_book = book_service.find_book_by_id(id, db)
+        if not found_book:
+            raise BookNotFoundError
+        found_book.status = new_status
+        db.commit()
 
-    def edit_book_memo(new_memo: str, id: str, db):
-        try:
-            found_book = book_service.find_book_by_id(id, db)
-            found_book.memo = new_memo
-            db.commit()
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise BookUpdateError from e
-
-    def edit_book_status(new_status: bool, id: str, db):
-        try:
-            found_book = book_service.find_book_by_id(id, db)
-            found_book.status = new_status
-            db.commit()
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise BookUpdateError from e
-
-    def delete_book_by_id(id: int, db):
-        try:
-            result = db.query(book).filter(book.id == id).delete()
-            if result == False:
-                raise BookNotFoundError
-            db.commit()
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
+    def delete_book_by_id(id: str, db):
+        result = db.query(book).filter(book.id == id).delete()
+        db.commit()
+        return result
 
     def delete_book_by_title(title: str, user_id: str, db):
-        try:
-            result = db.query(book).filter(book.title == title, book.user_id == user_id).delete()
-            if result == False:
-                raise BookNotFoundError
-            db.commit()
-        except BookNotFoundError:
-            raise
-        except Exception as e:
-            db.rollback()
-            raise DatabaseCommitError from e
+        result = db.query(book).filter(book.title == title, book.user_id == user_id).delete()
+        db.commit()
+        return result
 
     def get_initial(char):
         base_code = 0xAC00
@@ -250,13 +157,3 @@ class book_service:
 
     def convert_text_to_initial(text):
         return ''.join(book_service.get_initial(char) or '' for char in text)
-
-    def check_page_validity(start_page: int, end_page: int):
-        if start_page < 0 or end_page < 0:
-            raise NegativePageNumberError
-        if start_page > end_page:
-            raise PageRangeError
-        
-    def book_id_list(user_id: str, db):
-        book_list = db.query(book).filter(book.user_id == user_id).all()
-        return [book.id for book in book_list]

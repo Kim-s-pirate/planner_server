@@ -170,7 +170,7 @@ async def delete_schedule(request: Request, year: str, month: str):
 
 
 
-        
+
 
 @router.post("/register/goal")
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
