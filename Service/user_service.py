@@ -62,7 +62,7 @@ class user_service:
         found_user = user_service.find_user_by_id(id, db)
         if not found_user:
             raise UserNotFoundError
-        if not user_service.find_another_user_by_userid(new_userid, id, db):
+        if user_service.find_another_user_by_userid(new_userid, id, db):
             raise UserAlreadyExistsError
         found_user.userid = new_userid
         db.commit()
@@ -82,7 +82,7 @@ class user_service:
         found_user = user_service.find_user_by_id(id, db)
         if not found_user:
             raise UserNotFoundError
-        if not user_service.find_another_user_by_email(new_email, id, db):
+        if user_service.find_another_user_by_email(new_email, id, db):
             raise UserAlreadyExistsError
         found_user.email = new_email
         db.commit()

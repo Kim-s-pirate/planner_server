@@ -30,7 +30,7 @@ class subject_service:
             title=subject_entity.title,
             color=subject_entity.color
         )
-    ######################
+
     def create_subject(subject: subject, db):
         try:
             if subject_service.is_title_exists(subject.title, subject.user_id, db):

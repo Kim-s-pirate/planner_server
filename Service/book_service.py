@@ -69,7 +69,7 @@ class book_service:
     def find_book_by_subject(title: str, user_id, db):
         subject = subject_service.find_subject_by_title(title, user_id, db)
         if not subject:
-            return None
+            return []
         return book_service.find_book_by_subject_id(subject.id, db)
 
     def find_book_id_list(user_id: str, db):

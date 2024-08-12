@@ -1,10 +1,10 @@
 from Database.database import db
 from Database.models import log
-from Data.user import userid
+from Data.user import user_userid
 from Service.error import *
 
 class log_service:
-    def create_log(userid: userid, log: str, db):
+    def create_log(userid: user_userid, log: str, db):
         try:
             db.add(log)
             db.commit()
