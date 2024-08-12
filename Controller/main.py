@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from starlette.status import *
 import uvicorn
 from Database.database import create_database, engine
-from Router import register, login, main_page, book, subject, calendar, planner, email
+from Router import register, login, main_page, book, subject, calendar, planner, email, achievement
 from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 create_database()
@@ -42,6 +42,7 @@ app.include_router(subject.router)
 app.include_router(calendar.router)
 app.include_router(planner.router)
 app.include_router(email.router)
+app.include_router(achievement.router)
 
 # CORS
 origins = [
