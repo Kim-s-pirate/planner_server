@@ -66,7 +66,7 @@ class subject_service:
         return random.choice(remain_color)
 
     def edit_title(new_title: str, id: str, user_id: str, db):
-        if subject_service.find_subject_by_title(new_title, user_id, db) is not None:
+        if subject_service.is_title_exists(new_title, user_id, db):
             raise SubjectAlreadyExistsError
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:

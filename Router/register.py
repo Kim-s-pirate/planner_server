@@ -38,8 +38,10 @@ async def check_userid_exists(userid: str = Query(None)):
     db = get_db()
     try:
         if user_service.is_userid_exists(userid, db):
-            return JSONResponse(status_code=409, content={"message": "Userid already exists"})
+            raise UserAlreadyExistsError
         return JSONResponse(status_code=200, content={"message": "Userid is available"})
+    except UserAlreadyExistsError:
+        return JSONResponse(status_code=409, content={"message": "Userid already exists"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "User check failed"})
     finally:
