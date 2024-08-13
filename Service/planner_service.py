@@ -151,9 +151,6 @@ class planner_service:
     def find_result_by_data(result_data: result_register, user_id: str, db):
         return db.query(result).filter(result.date == result_data.date, result.user_id == user_id, result.book_id == result_data.book_id).first()
 
-
-        
-
     def find_planner_by_date(date: date, user_id: str, db):
         return db.query(planner).filter(planner.date == date, planner.user_id == user_id).first()
 
