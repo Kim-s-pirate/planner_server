@@ -1,4 +1,5 @@
-from fastapi.responses import JSONResponse
+import json
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
 from Database.database import get_db
 from Data.user import *
@@ -12,24 +13,27 @@ from Service.authorization_service import *
 import os
 from dotenv import load_dotenv
 from authlib.integrations.starlette_client import OAuth
+from authlib.integrations.requests_client import OAuth2Session
 from starlette.config import Config
 
 router = APIRouter()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-oauth = OAuth()
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
+GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
 
-oauth.register(
-    name='google',
+oauth = OAuth2Session(
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    refresh_token_url=None,
-    redirect_uri='http://localhost:1500/auth',
-    client_kwargs={'scope': 'openid profile email'},
+    redirect_uri=GOOGLE_REDIRECT_URI,
+    scope='openid profile email',
+    authorization_endpoint=GOOGLE_AUTHORIZATION_URL,
+    token_endpoint=GOOGLE_TOKEN_URL,
 )
 
 @router.post("/account/login")
@@ -78,31 +82,51 @@ async def logout(request: Request):
     finally:
         db.close()
 
-#oauth2
+# OAuth2
 @router.get('/account/oauth2/login')
 async def login(request: Request):
-    redirect_uri = os.getenv('REDIRECT_URI')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    # state = secrets.token_urlsafe(16)
+    # request.session['state'] = state
+    authorization_url, _ = oauth.create_authorization_url(GOOGLE_AUTHORIZATION_URL)
+    return RedirectResponse(authorization_url)
 
-@router.get('/account/auth')
+@router.get('/account/login/oauth/google')
 async def auth(request: Request):
     try:
-        token = await oauth.google.authorize_access_token(request)
-        user = await oauth.google.parse_id_token(request, token)
-        # 여기서 얻은 사용자 정보를 이용해 필요한 작업을 수행
-        return JSONResponse({
-            "access_token": token["access_token"],
-            "id_token": token["id_token"],
-            "user_info": user
-        })
+        # Exchange authorization code for access token
+        token = oauth.fetch_token(
+            GOOGLE_TOKEN_URL,
+            authorization_response=request.url._url,
+            client_id=GOOGLE_CLIENT_ID,
+            client_secret=GOOGLE_CLIENT_SECRET
+        )
+
+        # Fetch user information
+        user_info = oauth.get(GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {token['access_token']}"})
+        user_data = user_info.json()
+        print(user_data)
+        db = get_db()
+        if user_service.find_user_by_email(user_data["email"], db):
+            return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
+        else:
+            return JSONResponse(status_code=404, content={"message": "User needs to register"})
+        
+        #여기서 프론트에서 작업을 해서 정보를 주면 추가해서 넣는 식으로 하면 될 것 같음.
+        
     except Exception as e:
-        return JSONResponse(status_code=400, content={"message": str(e)})
+        raise e
+        return JSONResponse(status_code=500, content={"message": str(e)})
 
 # 사용자 정보 API
 @router.get('/account/user-info')
-async def user_info(token: str):
+async def user_info(request: Request):
     try:
-        user = await oauth.google.parse_id_token(Request, {"id_token": token})
-        return JSONResponse({"user_info": user})
+        token = request.cookies.get("access_token")
+        if not token:
+            return JSONResponse(status_code=401, content={"message": "Token not found"})
+        
+        user_info = await oauth.get(GOOGLE_USERINFO_URL, token=token)
+        user_data = user_info.json()
+        return JSONResponse(content={"user_info": user_data})
     except Exception as e:
-        return JSONResponse(status_code=400, content={"message": "Invalid token"})
+        return JSONResponse(status_code=400, content={"message": "Invalid token or error fetching user info"})
