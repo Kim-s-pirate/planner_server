@@ -520,8 +520,6 @@ async def subject_book_list(request: Request):
 
 
 
-
-
 # @router.get("/book_list/{subject}")
 # async def book_list_by_subject(request: Request, subject: str):
 #     db = get_db()

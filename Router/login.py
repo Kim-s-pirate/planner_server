@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from authlib.integrations.starlette_client import OAuth
 from authlib.integrations.requests_client import OAuth2Session
 from starlette.config import Config
+import urllib.parse
 
 router = APIRouter()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -27,7 +28,14 @@ GOOGLE_AUTHORIZATION_URL = 'https://accounts.google.com/o/oauth2/auth'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
 
-oauth = OAuth2Session(
+NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
+NAVER_REDIRECT_URI = os.getenv("NAVER_REDIRECT_URI")
+NAVER_AUTHORIZATION_URI = os.getenv("NAVER_AUTHORIZATION_URI")
+NAVER_TOKEN_URL = 'https://nid.naver.com/oauth2.0/token'
+NAVER_USERINFO_URL = 'https://openapi.naver.com/v1/nid/me'
+
+oauth_google = OAuth2Session(
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
     redirect_uri=GOOGLE_REDIRECT_URI,
@@ -35,6 +43,8 @@ oauth = OAuth2Session(
     authorization_endpoint=GOOGLE_AUTHORIZATION_URL,
     token_endpoint=GOOGLE_TOKEN_URL,
 )
+
+oauth_naver = OAuth2Session(NAVER_CLIENT_ID, redirect_uri=NAVER_AUTHORIZATION_URI)
 
 @router.post("/account/login")
 async def login(request: Request, user_data: user_login):
@@ -87,14 +97,14 @@ async def logout(request: Request):
 async def login(request: Request):
     # state = secrets.token_urlsafe(16)
     # request.session['state'] = state
-    authorization_url, _ = oauth.create_authorization_url(GOOGLE_AUTHORIZATION_URL)
+    authorization_url, _ = oauth_google.create_authorization_url(GOOGLE_AUTHORIZATION_URL)
     return RedirectResponse(authorization_url)
 
 @router.get('/account/login/oauth/google')
 async def auth(request: Request):
     try:
         # Exchange authorization code for access token
-        token = oauth.fetch_token(
+        token = oauth_google.fetch_token(
             GOOGLE_TOKEN_URL,
             authorization_response=request.url._url,
             client_id=GOOGLE_CLIENT_ID,
@@ -102,7 +112,7 @@ async def auth(request: Request):
         )
 
         # Fetch user information
-        user_info = oauth.get(GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {token['access_token']}"})
+        user_info = oauth_google.get(GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {token['access_token']}"})
         user_data = user_info.json()
         print(user_data)
         db = get_db()
@@ -110,23 +120,48 @@ async def auth(request: Request):
             return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
         else:
             return JSONResponse(status_code=404, content={"message": "User needs to register"})
-        
-        #여기서 프론트에서 작업을 해서 정보를 주면 추가해서 넣는 식으로 하면 될 것 같음.
-        
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-# 사용자 정보 API
-@router.get('/account/user-info')
-async def user_info(request: Request):
+@router.get('/account/oauth2/naver/login')
+async def login(request: Request):
     try:
-        token = request.cookies.get("access_token")
-        if not token:
-            return JSONResponse(status_code=401, content={"message": "Token not found"})
-        
-        user_info = await oauth.get(GOOGLE_USERINFO_URL, token=token)
-        user_data = user_info.json()
-        return JSONResponse(content={"user_info": user_data})
+        state = secrets.token_urlsafe(16)
+        request.session['state'] = state
+        authorization_url = (
+            NAVER_AUTHORIZATION_URI
+            + "?response_type=code&client_id="
+            + NAVER_CLIENT_ID
+            + "&redirect_uri="
+            + urllib.parse.quote(NAVER_REDIRECT_URI)
+            + "&state="
+            + urllib.parse.quote(state)
+        )
+        # state 값을 세션에 저장하거나 다른 방법으로 관리할 수 있습니다.
+        return RedirectResponse(authorization_url)
     except Exception as e:
-        return JSONResponse(status_code=400, content={"message": "Invalid token or error fetching user info"})
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
+@router.get('/account/login/oauth/naver')
+async def auth(request: Request, state_: str = None):
+    try:
+        code = request.query_params['code']
+        token = oauth_naver.fetch_token(
+            NAVER_TOKEN_URL,
+            authorization_response=request.url._url,
+            client_id=NAVER_CLIENT_ID,
+            client_secret=NAVER_CLIENT_SECRET
+        )
+        user_info = oauth_naver.get(NAVER_USERINFO_URL, headers={"Authorization": f"Bearer {token['access_token']}"})
+        user_data = user_info.json()
+        print(user_data)
+        print(token)
+        db = get_db()
+        if user_service.find_user_by_email(user_data["response"]["email"], db):
+            return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
+        else:
+            return JSONResponse(status_code=404, content={"message": "User needs to register"})
+    except Exception as e:
+        raise e
+        return JSONResponse(status_code=500, content={"message": str(e)})
