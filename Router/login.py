@@ -58,7 +58,7 @@ async def login(request: Request, user_data: user_login):
         found_user = user_service.find_user_by_email(user_data.email, db)
         if not found_user or user_data.password != found_user.password:
             raise UserNotFoundError
-        session_id = AuthorizationService.generate_session(found_user.userid, found_user.id)
+        session_id = AuthorizationService.generate_session(request, found_user.userid, found_user.id)
         response = JSONResponse(
             status_code=200,
             content={"message": "User logged in successfully"}
@@ -70,6 +70,7 @@ async def login(request: Request, user_data: user_login):
     except UserNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "ID or password does not match"})
     except Exception as e:
+        raise e
         return JSONResponse(status_code=500, content={"message": "User login failed"})
     finally:
         db.close()
@@ -123,9 +124,19 @@ async def auth(request: Request):
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": str(e)})
+    
+@router.get("/account/oauth2/naver/get_state")
+async def get_state(request: Request):
+    try:
+        state = secrets.token_urlsafe(16)
+        request.session['state'] = state
+        print("state: "+state)
+        return JSONResponse(status_code=200, content={"state": state})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
 
 @router.get('/account/oauth2/naver/login')
-async def login(request: Request):
+async def naver_login(request: Request):
     try:
         state = secrets.token_urlsafe(16)
         request.session['state'] = state
@@ -147,6 +158,11 @@ async def login(request: Request):
 async def auth(request: Request, state_: str = None):
     try:
         code = request.query_params['code']
+        state = request.query_params['state']
+        print(request.query_params['state'])
+        print(request.session.get('state'))
+        if state != request.session['state']:
+            return JSONResponse(status_code=401, content={"message": "Invalid state"})
         token = oauth_naver.fetch_token(
             NAVER_TOKEN_URL,
             authorization_response=request.url._url,

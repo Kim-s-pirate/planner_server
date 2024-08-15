@@ -151,6 +151,7 @@ async def get_book_list(request: Request):
     except BookNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "Book not found"})
     except Exception as e:
+        raise e
         return JSONResponse(status_code=500, content={"message": "Book find failed"})
     finally:
         db.close()
