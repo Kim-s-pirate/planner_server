@@ -32,7 +32,11 @@ app = FastAPI()
 
 
 
-app.add_middleware(SessionMiddleware, secret_key=secret, max_age=10800)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=secret,
+    max_age=10800
+)
 
 app.include_router(register.router)
 app.include_router(login.router)
@@ -46,11 +50,12 @@ app.include_router(achievement.router)
 
 # CORS
 origins = [
-    "*"
+    "http://localhost:5173",
+    "*"  # 모든 도메인 허용 (개발 중에만 사용, 배포 시에는 특정 도메인만 허용)
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

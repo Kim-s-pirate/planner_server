@@ -32,59 +32,72 @@ class AuthorizationService:
     def session_id_list():
         return AuthorizationService.session_db.keys()
 
-    def generate_session(userid: str, id: str):
+    def generate_session(request: Request, userid: str, id: str):
         session_id = secrets.token_hex(16)
         while session_id in AuthorizationService.session_id_list():
             session_id = secrets.token_hex(16)
-        AuthorizationService.session_db[session_id] = {
+        session_data = {
             'userid': userid,
             'id': id,
-            'created_at': datetime.now(timezone.utc)
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
+        request.session['session_id'] = session_id
+        request.session['session_data'] = session_data
         return session_id
     
     def get_session(request: Request):
-        session_id = request.cookies.get('session_id')
+        session_id = request.session.get('session_id')
         if session_id is None:
             return False
         else:
             return session_id
         
     def check_session(request: Request):
-        session_id = request.cookies.get('session_id')
+        session_id = request.session.get('session_id')
         if session_id in AuthorizationService.session_id_list():
             return True
     
+    @staticmethod
     def verify_session(request: Request, db):
-        session_id = request.cookies.get('session_id')
+        session_id = request.session.get('session_id')
         if session_id is None:
             raise SessionIdNotFoundError
-        if session_id not in AuthorizationService.session_id_list():
+        session = request.session.get('session_data')
+        if session is None:
             raise SessionVerificationError
-        session = AuthorizationService.session_db[session_id]
         if user_service.find_user_by_id(session['id'], db) is None:
-            del AuthorizationService.session_db[session_id]
+            request.session.pop('session_id', None)
+            request.session.pop('session_data', None)
             raise UserNotFoundError
-        if session['created_at'] + timedelta(hours=3) < datetime.now(timezone.utc):
-            del AuthorizationService.session_db[session_id]
+        if datetime.fromisoformat(session['created_at']) + timedelta(hours=3) < datetime.now(timezone.utc):
+            request.session.pop('session_id', None)
+            request.session.pop('session_data', None)
             raise SessionExpiredError
         return session
     #여기 부분도 userid를 주는게 아니라 원래 값을 반환하도록 해야함.
     
+    @staticmethod
     def delete_session(request: Request):
-        session_id = request.cookies.get('session_id')
+        session_id = request.session.get('session_id')
         if session_id is None:
             raise SessionIdNotFoundError
-        del AuthorizationService.session_db[session_id]
+        request.session.pop('session_id', None)
+        request.session.pop('session_data', None)
         return True
     
+    @staticmethod
     def modify_session(request: Request, new_userid: str):
-        session_id = request.cookies.get('session_id')
+        session_id = request.session.get('session_id')
         if session_id is None:
             raise SessionIdNotFoundError
-        AuthorizationService.session_db[session_id]['userid'] = new_userid
+        session_data = request.session.get('session_data')
+        if session_data is None:
+            raise SessionVerificationError
+        session_data['userid'] = new_userid
+        request.session['session_data'] = session_data
         return True
 
+    @staticmethod
     def check_authorization(id: str, another_id: str):
         if id != another_id:
             raise UnauthorizedError
