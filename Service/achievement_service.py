@@ -24,6 +24,16 @@ class achievement_service:
         total_page = found_book.end_page - found_book.start_page + 1
         progress = len(unique_pages)*100/total_page
         return round(progress, 3)
+
+    def get_book_progress_by_period(period: achievement_request, book_id: str, db):
+        results = db.query(result).filter(result.date >= period.start_date, result.date <= period.end_date, result.book_id == book_id).all()
+        unique_pages = set()
+        for res in results:
+            unique_pages.update(res.page)
+        found_book = book_service.find_book_by_id(book_id, db)
+        total_page = found_book.end_page - found_book.start_page + 1
+        progress = len(unique_pages) * 100 / total_page
+        return round(progress, 3)
     
     def get_progress_by_book_id_list(book_id_list: List[str], db):
         progress_list = []

@@ -16,6 +16,7 @@ create_database()
 from Service.email_service import email_service
 import threading
 import schedule
+import atexit
 
 load_dotenv("../.env")
 secret = os.getenv("secret")

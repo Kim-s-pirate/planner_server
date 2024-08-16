@@ -105,3 +105,27 @@ class user_service:
         result = db.query(user).filter(user.userid == userid).delete()
         db.commit()
         return result
+
+    def register_form_validation(user_register: user_register):
+        # email
+        if user_register.email == "":
+            raise EmptyEmailError
+        if " " in user_register.email:
+            raise EmailContainsSpacesError
+        # userid
+        if user_register.userid == "":
+            raise EmptyUseridError
+        if " " in user_register.userid:
+            raise UseridContainsSpacesError
+        if len(user_register.userid) < 3 or len(user_register.userid) > 20:
+            raise InappositeUseridLengthError
+        # username
+        if user_register.username == "":
+            raise EmptyUsernameError
+        # password
+        if user_register.password == "":
+            raise EmptyPasswordError
+        if " " in user_register.password:
+            raise PasswordContainsSpacesError
+        if len(user_register.password) < 3 or len(user_register.password) > 20:
+            raise InappositePasswordLengthError

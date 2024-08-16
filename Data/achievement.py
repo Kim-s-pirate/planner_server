@@ -9,3 +9,6 @@ class achievement_request(BaseModel):
 class achievement(BaseModel):
     book_id: str
     progress: Optional[float] = 0.0
+
+class achievement_date(BaseModel):
+    date: date
