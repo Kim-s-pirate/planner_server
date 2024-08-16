@@ -77,8 +77,14 @@ async def get_subject_by_id(request: Request, id: str):
         if not found_subject:
             raise UnauthorizedError
         AuthorizationService.check_authorization(requester_id, found_subject.user_id)
-        subject_data = subject_service.to_subject_data(found_subject)
-        return JSONResponse(status_code=200, content={"message": subject_data.__dict__})
+        user = user_service.find_user_by_id(found_subject.user_id, db)
+        if not user:
+            raise UserNotFoundError
+        user = user_service.to_user_data(user).__dict__
+        found_subject = subject_service.to_subject_data(found_subject).__dict__
+        found_subject['user'] = user
+        del found_subject['user_id']
+        return JSONResponse(status_code=200, content={"message": found_subject})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError:
@@ -101,8 +107,14 @@ async def get_subject_by_title(request: Request, title: str):
         found_subject = subject_service.find_subject_by_title(title, requester_id, db)
         if not found_subject:
             raise SubjectNotFoundError
-        subject_data = subject_service.to_subject_data(found_subject)
-        return JSONResponse(status_code=200, content={"message": subject_data.__dict__})
+        user = user_service.find_user_by_id(found_subject.user_id, db)
+        if not user:
+            raise UserNotFoundError
+        user = user_service.to_user_data(user).__dict__
+        found_subject = subject_service.to_subject_data(found_subject).__dict__
+        found_subject['user'] = user
+        del found_subject['user_id']
+        return JSONResponse(status_code=200, content={"message": found_subject})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:
@@ -124,8 +136,15 @@ async def get_subject_list(request: Request):
         found_subject = subject_service.find_subject_by_user_id(requester_id, db)
         if not found_subject:
             raise SubjectNotFoundError
-        data = {"subjects": [subject_service.to_subject_data(subject).title for subject in found_subject]}
-        return JSONResponse(status_code=200, content={"message": data})
+        user = user_service.find_user_by_id(found_subject[0].user_id, db)
+        if not user:
+            raise UserNotFoundError
+        user = user_service.to_user_data(user).__dict__
+        found_subject = [subject_service.to_subject_data(subject).__dict__ for subject in found_subject]
+        for subject in found_subject:
+            subject['user'] = user
+            del subject['user_id']
+        return JSONResponse(status_code=200, content={"message": found_subject})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:

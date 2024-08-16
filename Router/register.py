@@ -18,9 +18,37 @@ async def register(user_data: user_register):
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
+        user_service.register_form_validation(user_data)
         user_data = user_service.to_user_db(user_data)
         user_service.create_user(user_data, db)
         return JSONResponse(status_code=201, content={"message": "User registered successfully"})
+    except EmptyEmailError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Email cannot be blank"})
+    except EmailContainsSpacesError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Email cannot contain spaces"})
+    except EmptyUseridError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Userid cannot be blank"})
+    except UseridContainsSpacesError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Userid cannot contain spaces"})
+    except InappositeUseridLengthError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Userid must be between 3 and 20 characters long"})
+    except EmptyUsernameError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Username cannot be blank"})
+    except EmptyPasswordError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Password cannot be blank"})
+    except PasswordContainsSpacesError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Password cannot contain spaces"})
+    except InappositePasswordLengthError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Password must be between 3 and 20 characters long"})
     except InvalidUserDataError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=400, content={"message": "Invalid user data"})

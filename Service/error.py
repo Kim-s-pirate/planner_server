@@ -29,6 +29,51 @@ class DuplicateLoginError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class EmptyEmailError(Exception):
+    def __init__(self, message="Email cannot be blank"):
+        self.message = message
+        super().__init__(self.message)
+
+class EmailContainsSpacesError(Exception):
+    def __init__(self, message="Email cannot contain spaces"):
+        self.message = message
+        super().__init__(self.message)
+
+class EmptyUseridError(Exception):
+    def __init__(self, message="Userid cannot be blank"):
+        self.message = message
+        super().__init__(self.message)
+
+class UseridContainsSpacesError(Exception):
+    def __init__(self, message="Userid cannot contain spaces"):
+        self.message = message
+        super().__init__(self.message)
+
+class InappositeUseridLengthError(Exception):
+    def __init__(self, message="Userid must be between 3 and 20 characters long"):
+        self.message = message
+        super().__init__(self.message)
+
+class EmptyUsernameError(Exception):
+    def __init__(self, message="Username cannot be blank"):
+        self.message = message
+        super().__init__(self.message)
+
+class EmptyPasswordError(Exception):
+    def __init__(self, message="Password cannot be blank"):
+        self.message = message
+        super().__init__(self.message)
+
+class PasswordContainsSpacesError(Exception):
+    def __init__(self, message="Password cannot contain spaces"):
+        self.message = message
+        super().__init__(self.message)
+
+class InappositePasswordLengthError(Exception):
+    def __init__(self, message="Password must be between 3 and 20 characters long"):
+        self.message = message
+        super().__init__(self.message)
+
 # subject
 class SubjectNotFoundError(Exception):
     def __init__(self, message="Subject not found"):

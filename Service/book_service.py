@@ -47,6 +47,8 @@ class book_service:
         try:
             if book_service.is_title_exists(book.title, book.user_id, db):
                 raise BookAlreadyExistsError
+            if book.subject_id and db.query(subject).filter(subject.id == book.subject_id).first() is None:
+                raise SubjectNotFoundError
             db.add(book)
             db.commit()
         except Exception as e:

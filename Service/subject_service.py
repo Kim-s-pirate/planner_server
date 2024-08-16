@@ -46,11 +46,17 @@ class subject_service:
     def find_subject_by_title(title: str, user_id: str, db):
         return db.query(subject).filter(subject.title == title, subject.user_id == user_id).first()
 
+    def find_another_subject_by_title(title: str, id: str, user_id: str, db):
+        return db.query(subject).filter(subject.title == title, subject.user_id == user_id, subject.id != id).first()
+
     def find_subject_by_user_id(user_id: str, db):
         return db.query(subject).filter(subject.user_id == user_id).all()
 
     def find_subject_by_color(color: str, user_id: str, db):
         return db.query(subject).filter(subject.color == color, subject.user_id == user_id).first()
+
+    def find_another_subject_by_color(color: str, id: str, user_id: str, db):
+        return db.query(subject).filter(subject.color == color, subject.user_id == user_id, subject.id != id).first()
 
     def is_title_exists(title: str, user_id: str, db):
         return db.query(subject).filter(subject.title == title, subject.user_id == user_id).first() is not None
@@ -66,7 +72,7 @@ class subject_service:
         return random.choice(remain_color)
 
     def edit_title(new_title: str, id: str, user_id: str, db):
-        if subject_service.is_title_exists(new_title, user_id, db):
+        if subject_service.find_another_subject_by_title(new_title, id, user_id, db):
             raise SubjectAlreadyExistsError
         found_subject = subject_service.find_subject_by_id(id, db)
         if not found_subject:
@@ -77,7 +83,7 @@ class subject_service:
     def edit_color(new_color: str, id: str, user_id: str, db):
         if not new_color in COLOR_SET:
             raise InvalidSubjectDataError
-        found_subject = subject_service.find_subject_by_color(new_color, user_id, db)
+        found_subject = subject_service.find_another_subject_by_color(new_color, id, user_id, db)
         target_subject = subject_service.find_subject_by_id(id, db)
         if not target_subject:
             raise SubjectNotFoundError
