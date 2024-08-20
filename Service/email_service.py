@@ -31,8 +31,10 @@ class email_service:
         found = db.query(state).filter(state.email == email).first()
         if found is not None:
             found.state = state
+            db.commit()
             return True
         db.add(state(email=email, state=state_))
+        db.commit()
         return True
     
     def find_state(email: str, db):
