@@ -147,4 +147,4 @@ class verification(Base):
 class state(Base):
     __tablename__ = "states"
     email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
-    state = Column(String(50), nullable=False)
+    state = Column(String(100), nullable=False)

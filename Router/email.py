@@ -8,7 +8,8 @@ from typing import List
 from fastapi import APIRouter
 import yagmail
 from Data.email import *
-from Database.database import get_db, hash_id
+from Database.database import get_db
+from Database.models import hash_id
 from Service.email_service import *
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
