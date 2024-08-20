@@ -1,10 +1,11 @@
 import json
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import text
+from Data.oauth import *
 from Database.database import get_db
 from Data.user import *
 from Database.models import user
-from fastapi import APIRouter, Response, Request
+from fastapi import APIRouter, Response, Request, requests
 from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
@@ -16,6 +17,7 @@ from authlib.integrations.starlette_client import OAuth
 from authlib.integrations.requests_client import OAuth2Session
 from starlette.config import Config
 import urllib.parse
+import requests
 
 router = APIRouter()
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -130,7 +132,9 @@ async def get_state(request: Request):
         state = secrets.token_urlsafe(16)
         request.session['state'] = state
         print("state: "+state)
-        return JSONResponse(status_code=200, content={"state": state})
+        response = JSONResponse(status_code=200, content={"state": state})
+        response.set_cookie(key="state", value=state, httponly=True, samesite="None", secure=True)
+        return response
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
@@ -153,30 +157,36 @@ async def naver_login(request: Request):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-@router.get('/account/login/oauth/naver')
-async def auth(request: Request, state_: str = None):
+@router.post('/account/login/oauth/naver')
+async def auth(request: Request, naver_data: naver_data):
     try:
-        code = request.query_params['code']
-        state = request.query_params['state']
-        print(request.query_params['state'])
-        print(request.session.get('state'))
-        if state != request.session['state']:
+        code = naver_data.code
+        state = naver_data.state
+        cookie_state = request.cookies.get("state")
+
+        if state != cookie_state:
             return JSONResponse(status_code=401, content={"message": "Invalid state"})
         token = oauth_naver.fetch_token(
             NAVER_TOKEN_URL,
-            authorization_response=request.url._url,
             client_id=NAVER_CLIENT_ID,
-            client_secret=NAVER_CLIENT_SECRET
+            client_secret=NAVER_CLIENT_SECRET,
+            code = code,
+            state = state,
+            grant_type="authorization_code"
         )
-        user_info = oauth_naver.get(NAVER_USERINFO_URL, headers={"Authorization": f"Bearer {token['access_token']}"})
-        user_data = user_info.json()
+        response = requests.get(
+            NAVER_USERINFO_URL,
+            headers={"Authorization": f"Bearer {token['access_token']}"}
+        )
+        user_data = response.json()
         print(user_data)
-        print(token)
+
         db = get_db()
         if user_service.find_user_by_email(user_data["response"]["email"], db):
             return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
         else:
             return JSONResponse(status_code=404, content={"message": "User needs to register"})
+
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": str(e)})

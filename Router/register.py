@@ -4,11 +4,13 @@ from Database.database import db, get_db, rollback_to_savepoint
 from Data.user import *
 from Database.models import user
 from fastapi import APIRouter
+from Service.email_service import email_service
 from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
 from fastapi import Query, Request
 from Service.authorization_service import *
+from Data.oauth import *
 
 router = APIRouter()
 
@@ -18,6 +20,17 @@ async def register(user_data: user_register):
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
+        state=user_data.state
+        found_state = email_service.find_state(user_data.email, db)
+
+        if state == found_state.state and user_data.email == found_state.email:
+            pass
+        elif found_state is None:
+            raise StateNotFoundError
+        elif state != found_state.state:
+            raise StateMismatchError
+        elif user_data.email != found_state.email:
+            raise EmailMismatchError
         user_service.register_form_validation(user_data)
         user_data = user_service.to_user_db(user_data)
         user_service.create_user(user_data, db)
@@ -264,7 +277,14 @@ async def delete_user(request: Request, id: str):
     finally:
         db.close()
 
-
+# @router.post("/account/oauth2/naver/register")
+# async def oauth_register(request: Request, naver_data: naver_data, oauth_user_data: oauth_register):
+#     db = get_db()
+#     try:
+#         userid=oauth_user_data.userid
+#         username=oauth_user_data.username
+#         user_service.register_oauth_form_validation(oauth_user_data)
+#         user_service.register_oauth_user(naver_data, oauth_user_data, db)
 
 
 

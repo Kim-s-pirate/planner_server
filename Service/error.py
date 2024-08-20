@@ -174,3 +174,20 @@ class DatabaseCommitError(Exception):
     def __init__(self, message="Failed to commit to database"):
         self.message = message
         super().__init__(self.message)
+
+
+#email
+class EmailMismatchError(Exception):
+    def __init__(self, message="Email mismatch"):
+        self.message = message
+        super().__init__(self.message)
+
+class StateNotFoundError(Exception):
+    def __init__(self, message="State not found"):
+        self.message = message
+        super().__init__(self.message)
+
+class StateMismatchError(Exception):
+    def __init__(self, message="State mismatch"):
+        self.message = message
+        super().__init__(self.message)
