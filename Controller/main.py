@@ -52,11 +52,12 @@ app.include_router(achievement.router)
 # CORS
 origins = [
     "http://localhost:5173",
-    "*"  # 모든 도메인 허용 (개발 중에만 사용, 배포 시에는 특정 도메인만 허용)
+    "http://218.239.229.119:5173"  # 특정 도메인만 허용
 ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
