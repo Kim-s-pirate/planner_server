@@ -5,6 +5,7 @@ class user_register(BaseModel):
     username: str
     email: str
     password: str
+    state: str
 
 class user_login(BaseModel):
     email: str

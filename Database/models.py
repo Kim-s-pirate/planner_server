@@ -15,6 +15,7 @@ class user(Base): # id
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), index=True, unique=True, nullable=False)
     password = Column(String(100), nullable=False)
+    oauth = Column(Boolean, default=False, nullable=False)
     books = relationship("book", back_populates="user", cascade="all, delete, save-update")
     subjects = relationship("subject", back_populates="user", cascade="all, delete, save-update")
     schedules = relationship("schedule", back_populates="user", cascade="all, delete, save-update")
@@ -142,3 +143,8 @@ class verification(Base):
     code = Column(String(10), nullable=False)
     time = Column(DateTime, default=datetime.now, nullable=False)  # 현재 시간을 기본값으로 설정
     expire_time = Column(DateTime, default=lambda: datetime.now() + datetime.timedelta(minutes=30), nullable=False)
+
+class state(Base):
+    __tablename__ = "states"
+    email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
+    state = Column(String(50), nullable=False)
