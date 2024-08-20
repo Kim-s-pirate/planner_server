@@ -190,3 +190,4 @@ async def auth(request: Request, naver_data: naver_data):
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": str(e)})
+    

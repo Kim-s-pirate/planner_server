@@ -1,3 +1,4 @@
+from Data.oauth import naver_data, oauth_register
 from Database.models import user
 from Data.user import *
 from Database.database import db
@@ -129,3 +130,27 @@ class user_service:
             raise PasswordContainsSpacesError
         if len(user_register.password) < 3 or len(user_register.password) > 20:
             raise InappositePasswordLengthError
+        
+    def oauth_register_form_validation(oauth_register: oauth_register):
+        # userid
+        if oauth_register.userid == "":
+            raise EmptyUseridError
+        if " " in oauth_register.userid:
+            raise UseridContainsSpacesError
+        if len(oauth_register.userid) < 3 or len(oauth_register.userid) > 20:
+            raise InappositeUseridLengthError
+        # username
+        if oauth_register.username == "":
+            raise EmptyUsernameError
+        
+    def register_oauth_naver_user(naver_register: naver_data, oauth_register: oauth_register):
+        user_service.oauth_register_form_validation(oauth_register)
+        new_user = user(
+            userid=oauth_register.userid,
+            username=oauth_register.username,
+            email=oauth_register.email,
+            password="nothing",
+            oauth=True
+        )
+        user_service.create_user(new_user, db)
+        return new_user

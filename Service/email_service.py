@@ -26,3 +26,14 @@ class email_service:
         now = datetime.now()
         db.query(verification).filter(verification.expire_time < now).delete()
         db.commit()
+
+    def register_state(email: str, state_: str, db):
+        found = db.query(state).filter(state.email == email).first()
+        if found is not None:
+            found.state = state
+            return True
+        db.add(state(email=email, state=state_))
+        return True
+    
+    def find_state(email: str, db):
+        return db.query(state).filter(state.email == email).first()

@@ -8,7 +8,7 @@ from typing import List
 from fastapi import APIRouter
 import yagmail
 from Data.email import *
-from Database.database import get_db
+from Database.database import get_db, hash_id
 from Service.email_service import *
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
@@ -63,7 +63,11 @@ async def verification_code(verify: email_verification):
             return JSONResponse(status_code=404, content={"message": "Email not found"})
         if found.code != code:
             return JSONResponse(status_code=401, content={"message": "Verification code is incorrect"})
-        return JSONResponse(status_code=200, content={"message": "Verification code is correct"})
+        state = hash_id()
+        email_service.register_state(verify.email, state, db)
+
+
+        return JSONResponse(status_code=200, content={"message": "Verification code is correct", "state": state})
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while verifying the code"})
