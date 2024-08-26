@@ -27,7 +27,7 @@ async def test(request: Request, achiement_req: achievement_request):
     except Exception as e:
         rollback_to_savepoint(db)
         print(e)
-        return JSONResponse(status_code=409, content={"message": "There was some error"})
+        return JSONResponse(status_code=500, content={"message": "There was some error"})
     finally:
         db.close()
 
@@ -41,7 +41,7 @@ async def progresstest(request: Request, achiement_req: achievement_request, boo
     except Exception as e:
         rollback_to_savepoint(db)
         print(e)
-        return JSONResponse(status_code=409, content={"message": "There was some error"})
+        return JSONResponse(status_code=500, content={"message": "There was some error"})
     finally:
         db.close()
 

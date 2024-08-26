@@ -75,7 +75,7 @@ async def register(user_data: user_register):
         db.close()
 
 @router.get("/account/check_userid_available")
-async def check_userid_available(userid: str = Query(None)):
+async def check_userid_available(userid: str):
     db = get_db()
     try:
         if user_service.is_userid_exists(userid, db):
@@ -89,12 +89,14 @@ async def check_userid_available(userid: str = Query(None)):
         db.close()
 
 @router.get("/account/check_email_available")
-async def check_email_available(email: str = Query(None)):
+async def check_email_available(email: str):
     db = get_db()
     try:
         if user_service.is_email_exists(email, db):
-            return JSONResponse(status_code=409, content={"message": "Email already exists"})
+            raise UserAlreadyExistsError
         return JSONResponse(status_code=200, content={"message": "Email is available"})
+    except UserAlreadyExistsError:
+        return JSONResponse(status_code=409, content={"message": "Email already exists"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "User check failed"})
     finally:

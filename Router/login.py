@@ -123,7 +123,6 @@ async def auth(request: Request):
         else:
             return JSONResponse(status_code=404, content={"message": "User needs to register"})
     except Exception as e:
-        raise e
         return JSONResponse(status_code=500, content={"message": str(e)})
     
 @router.get("/account/oauth2/naver/get_state")
@@ -188,6 +187,5 @@ async def auth(request: Request, naver_data: naver_data):
             return JSONResponse(status_code=404, content={"message": "User needs to register"})
 
     except Exception as e:
-        raise e
         return JSONResponse(status_code=500, content={"message": str(e)})
     

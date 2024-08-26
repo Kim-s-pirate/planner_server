@@ -28,7 +28,7 @@ async def schedule_create(request: Request, schedule_data: day_schedule_register
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         schedule_data = calendar_service.to_schedule_db(schedule_data, requester_id)
         calendar_service.create_schedule(schedule_data, db)
-        return JSONResponse(status_code=200, content={"message": "Schedule registered successfully"})
+        return JSONResponse(status_code=201, content={"message": "Schedule registered successfully"})
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -55,7 +55,7 @@ async def get_day_schedule(request: Request, date: date):
         schedule = calendar_service.to_schedule_data(schedule)
         schedule = calendar_service.schedule_to_dict(schedule)
         del schedule['user_id']
-        return JSONResponse(status_code=200, content={"schedule": schedule})
+        return JSONResponse(status_code=200, content={"message": schedule})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
     except SessionVerificationError as e:
@@ -153,57 +153,32 @@ async def delete_schedule(request: Request, year: str, month: str):
     finally:
         db.close()
 
-
-
-
-
-
-
-
-
-
-
-        #########################3
-
-
-
-
-
-
-
-
-
 @router.post("/register/goal")
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
-
         session = AuthorizationService.verify_session(request, db)
         user_id = session['id']
-
         if goal_data.month_goal == None and goal_data.week_goal == None:
             calendar_service.delete_goal(goal_data.year, goal_data.month, user_id, db)
         else:
             calendar_service.register_goal(goal_data, user_id, db)
-
         db.commit()
-
-        return JSONResponse(status_code=200, content={"message": "Goal registered successfully"})
-
+        return JSONResponse(status_code=201, content={"message": "Goal registered successfully"})
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-
     except SessionVerificationError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
     except Exception as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=500, content={"message": "There was some error while registering the goal"})
-
     finally:
         db.close()
 
@@ -215,27 +190,22 @@ async def delete_calendar_goal(request: Request, year: int, month: int):
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
-
         session = AuthorizationService.verify_session(request, db)
         user_id = session['id']
-
         calendar_service.delete_goal(year, month, user_id, db)
-
         db.commit()
-
         return JSONResponse(status_code=200, content={"message": "Goal deleted successfully"})
-
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
-
     except SessionVerificationError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-
+    except SessionExpiredError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
     except Exception as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=500, content={"message": "There was some error while deleting the goal"})
-
     finally:
         db.close()

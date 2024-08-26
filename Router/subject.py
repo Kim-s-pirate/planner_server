@@ -48,7 +48,7 @@ async def subject_create(request: Request, subject_data: subject_register):
         db.close()
 
 @router.get("/subject/check_title_available")
-async def check_title_available(request: Request, title: str = Query(None)):
+async def check_title_available(request: Request, title: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]

@@ -25,7 +25,7 @@ async def planner_register(request: Request, planner_data: planner_register):
 
         planner_service.register_planner_study_time(planner_data.date, user_id, db)
         db.commit()
-        return JSONResponse(status_code=200, content={"message": "planner registered successfully"})
+        return JSONResponse(status_code=201, content={"message": "planner registered successfully"})
     except Exception as e:
         raise e
         rollback_to_savepoint(db)
@@ -48,7 +48,7 @@ async def get_planner(request: Request, date: date):
         time_table_list = [planner_service.to_time_table_data(time_table).dict() for time_table in time_table_list]
         planner['to_do_list'] = to_do_list
         planner['time_table_list'] = time_table_list
-        return JSONResponse(status_code=200, content=planner)
+        return JSONResponse(status_code=200, content={"message": planner})
     except Exception as e:
         rollback_to_savepoint(db)
         print(e)
