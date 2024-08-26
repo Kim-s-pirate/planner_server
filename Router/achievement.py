@@ -46,7 +46,7 @@ async def book_achievement(request: Request, book_id: str):
 
 # 날짜 두개랑 책 id 받아서 해당 책의 해당 기간동안의 성과 보여주는 코드.
 @router.get("/achievement/period_book_achievement/{book_id}")
-async def period_book_achievement(request: Request, achiement_req: achievement_request, book_id: str):
+async def period_book_achievement(request: Request, start_date: date, end_date: date, book_id: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
@@ -54,7 +54,7 @@ async def period_book_achievement(request: Request, achiement_req: achievement_r
         if not found_book:
             raise UnauthorizedError
         AuthorizationService.check_authorization(requester_id, found_book.user_id)
-        progress = achievement_service.get_book_progress_by_period(achiement_req, book_id, db)
+        progress = achievement_service.get_book_progress_by_period(start_date, end_date, book_id, db)
         return JSONResponse(status_code=200, content={"message": progress})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -73,11 +73,11 @@ async def period_book_achievement(request: Request, achiement_req: achievement_r
 
 # 날짜 두개 받아서 그 사이의 성과 보여주는 코드. 그 사이 여러 책이 들어갈 수 있음
 @router.get("/achievement/period_achievement")
-async def period_achievement(request: Request, achiement_req: achievement_request):
+async def period_achievement(request: Request, start_date: date, end_date: date):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        progress = achievement_service.get_progress_by_period(achiement_req, requester_id, db)
+        progress = achievement_service.get_progress_by_period(start_date, end_date, requester_id, db)
         return JSONResponse(status_code=200, content={"message": progress})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -92,7 +92,7 @@ async def period_achievement(request: Request, achiement_req: achievement_reques
 
 # 날짜 하나와 책 id 받아서 그 날짜 이전까지의 해당 책의 진도율 보여주는 코드.
 @router.get("/achievement/book_last_achievement/{book_id}")
-async def book_last_achievement(request: Request, date: date, book_id: str):
+async def book_last_achievement(request: Request, last_date: date, book_id: str):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
@@ -100,7 +100,7 @@ async def book_last_achievement(request: Request, date: date, book_id: str):
         if not found_book:
             raise UnauthorizedError
         AuthorizationService.check_authorization(requester_id, found_book.user_id)
-        progress = achievement_service.get_book_progress_before_date(date, book_id, db)
+        progress = achievement_service.get_book_progress_before_date(last_date, book_id, db)
         return JSONResponse(status_code=200, content={"message": progress})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -117,11 +117,11 @@ async def book_last_achievement(request: Request, date: date, book_id: str):
 
 # 날짜 하나 받아서 그 날짜 이전까지의 진도율 보여주는 코드.
 @router.get("/achievement/last_achievement")
-async def last_achievement(request: Request, date: date):
+async def last_achievement(request: Request, last_date: date):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        progress = achievement_service.get_progress_before_date(date, requester_id, db)
+        progress = achievement_service.get_progress_before_date(last_date, requester_id, db)
         return JSONResponse(status_code=200, content={"message": progress})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})

@@ -23,8 +23,8 @@ class achievement_service:
         return round(progress, 3)
 
     # 해당하는 기간 중 특정 책에 대한 성취도 반환
-    def get_book_progress_by_period(period: achievement_request, book_id: str, db):
-        results = db.query(result).filter(result.date >= period.start_date, result.date <= period.end_date,
+    def get_book_progress_by_period(start_date: date, end_date: date, book_id: str, db):
+        results = db.query(result).filter(result.date >= start_date, result.date <= end_date,
                                           result.book_id == book_id).all()
         unique_pages = set()
         for res in results:
@@ -37,8 +37,8 @@ class achievement_service:
         return round(progress, 3)
 
     # 해당하는 기간 중 각 책에 대한 성취도 반환
-    def get_progress_by_period(period: achievement_request, user_id: str, db):
-        results = db.query(result).filter(result.date >= period.start_date, result.date <= period.end_date,
+    def get_progress_by_period(start_date: date, end_date: date, user_id: str, db):
+        results = db.query(result).filter(result.date >= start_date, result.date <= end_date,
                                           result.user_id == user_id).all()
         progress_by_book = {}
         for res in results:
