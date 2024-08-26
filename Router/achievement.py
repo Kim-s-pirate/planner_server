@@ -17,105 +17,121 @@ router = APIRouter()
 load_dotenv("../.env")
 secret = os.getenv("secret")
 
-@router.post("/test")
-async def test(request: Request, achiement_req: achievement_request):
-    try:
-        db = get_db()
-        result = achievement_service.generate_dates_between(achiement_req.start_date, achiement_req.end_date)
-        print(result)
-        return JSONResponse(status_code=200, content={"message": "Nice to meet you!"})
-    except Exception as e:
-        rollback_to_savepoint(db)
-        print(e)
-        return JSONResponse(status_code=500, content={"message": "There was some error"})
-    finally:
-        db.close()
-
-@router.get("/progresstest")
-async def progresstest(request: Request, achiement_req: achievement_request, book_id: str):
+# 책 id 받아서 총 성취량 보여주는 코드.
+@router.get("/achievement/book_achievement/{book_id}")
+async def book_achievement(request: Request, book_id: str):
     db = get_db()
     try:
-        progress = achievement_service.get_book_progress_by_period(achiement_req, book_id, db)
-        print(progress)
-        return JSONResponse(status_code=200, content={"message": "Nice to meet you!"})
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(book_id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        progress = achievement_service.get_progress_by_book_id(book_id, db)
+        return JSONResponse(status_code=200, content={"message": progress})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
+    except BookNotFoundError as e:
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
     except Exception as e:
-        rollback_to_savepoint(db)
-        print(e)
-        return JSONResponse(status_code=500, content={"message": "There was some error"})
+        return JSONResponse(status_code=500, content={"message": "achievement get failed"})
     finally:
         db.close()
 
-# @router.post("/get_result_by_date")
-# async def get_result_by_date(request: Request, achievement_req: achievement_request):
-#     db = get_db()
-#     try:
-#         requester_id = AuthorizationService.verify_session(request, db)["id"]
-#         result = achievement_service.find_result_by_period(achievement_req, requester_id, db)
-#         if not result:
-#             return JSONResponse(status_code=404, content={"message": "No results found"})
-#         return JSONResponse(status_code=200, content={"message": result})
-#     except Exception as e:
-#         rollback_to_savepoint(db)
-#         print(e)
-#         return JSONResponse(status_code=409, content={"message": "There was some error"})
-#     finally:
-#         db.close()
-#
-#
-# @router.post("/get_results_by_period")
-# async def get_results_by_period(request: Request, achievement_req: achievement_request):
-#     try:
-#         db = get_db()
-#         user_id = AuthorizationService.verify_session(request, db)["id"]
-#         results = achievement_service.find_result_by_period(achievement_req, user_id, db)
-#         if not results:
-#             return JSONResponse(status_code=404, content={"message": "No results found for the period"})
-#
-#         # 중복된 book_id 제거
-#         book_ids = list(set([res.book_id for res in results]))
-#         progress_list = achievement_service.get_progress_by_book_id_list(book_ids, db)
-#         return JSONResponse(status_code=200, content={"message": {"progress_list": progress_list}})
-#     except Exception as e:
-#         rollback_to_savepoint(db)
-#         print(e)
-#         return JSONResponse(status_code=409, content={"message": "There was some error"})
-#     finally:
-#         db.close()
-#
-# @router.post("/get_progress_by_book_id")
-# async def get_progress_by_book_id(request: Request, book_id: str):
-#     try:
-#         db = get_db()
-#         progress = achievement_service.get_progress_by_book_id(book_id, db)
-#         if progress is None:
-#             return JSONResponse(status_code=404, content={"message": "No progress found for the given book ID"})
-#         return JSONResponse(status_code=200, content={"progress": progress})
-#     except Exception as e:
-#         rollback_to_savepoint(db)
-#         print(e)
-#         return JSONResponse(status_code=409, content={"message": "There was some error"})
-#     finally:
-#         db.close()
-#
-# @router.post("/get_progress_by_book_id_list")
-# async def get_progress_by_book_id_list(request: Request, book_ids: List[str]):
-#     try:
-#         db = get_db()
-#         progress_list = achievement_service.get_progress_by_book_id_list(book_ids, db)
-#         return JSONResponse(status_code=200, content={"progress_list": progress_list})
-#     except Exception as e:
-#         rollback_to_savepoint(db)
-#         print(e)
-#         return JSONResponse(status_code=409, content={"message": "There was some error"})
-#     finally:
-#         db.close()
-#
-# @router.post("/generate_dates_between")
-# async def generate_dates_between(request: Request, achievement_req: achievement_request):
-#     try:
-#         dates = achievement_service.generate_dates_between(achievement_req.start_date, achievement_req.end_date)
-#         return JSONResponse(status_code=200, content={"dates": dates})
-#     except Exception as e:
-#         print(e)
-#         return JSONResponse(status_code=409, content={"message": "There was some error"})
+# 날짜 두개랑 책 id 받아서 해당 책의 해당 기간동안의 성과 보여주는 코드.
+@router.get("/achievement/period_book_achievement/{book_id}")
+async def period_book_achievement(request: Request, achiement_req: achievement_request, book_id: str):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(book_id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        progress = achievement_service.get_book_progress_by_period(achiement_req, book_id, db)
+        return JSONResponse(status_code=200, content={"message": progress})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UnauthorizedError as e:
+        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
+    except BookNotFoundError as e:
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "achievement get failed"})
+    finally:
+        db.close()
 
+# 날짜 두개 받아서 그 사이의 성과 보여주는 코드. 그 사이 여러 책이 들어갈 수 있음
+@router.get("/achievement/period_achievement")
+async def period_achievement(request: Request, achiement_req: achievement_request):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        progress = achievement_service.get_progress_by_period(achiement_req, requester_id, db)
+        return JSONResponse(status_code=200, content={"message": progress})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "achievement get failed"})
+    finally:
+        db.close()
+
+# 날짜 하나와 책 id 받아서 그 날짜 이전까지의 해당 책의 진도율 보여주는 코드.
+@router.get("/achievement/book_last_achievement/{book_id}")
+async def book_last_achievement(request: Request, date: date, book_id: str):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        found_book = book_service.find_book_by_id(book_id, db)
+        if not found_book:
+            raise UnauthorizedError
+        AuthorizationService.check_authorization(requester_id, found_book.user_id)
+        progress = achievement_service.get_book_progress_before_date(date, book_id, db)
+        return JSONResponse(status_code=200, content={"message": progress})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except BookNotFoundError as e:
+        return JSONResponse(status_code=404, content={"message": "Book not found"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "achievement get failed"})
+    finally:
+        db.close()
+
+# 날짜 하나 받아서 그 날짜 이전까지의 진도율 보여주는 코드.
+@router.get("/achievement/last_achievement")
+async def last_achievement(request: Request, date: date):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        progress = achievement_service.get_progress_before_date(date, requester_id, db)
+        return JSONResponse(status_code=200, content={"message": progress})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "achievement get failed"})
+    finally:
+        db.close()
+
+### 과목 id 받아서 해당 과목의 각 책의 성취량 보여주는 코드 필요?
