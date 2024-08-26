@@ -1,11 +1,12 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class user_register(BaseModel):
     userid: str
     username: str
     email: str
     password: str
-    state: str
+    state: Optional[str] = None
 
 class user_login(BaseModel):
     email: str

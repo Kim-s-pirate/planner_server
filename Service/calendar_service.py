@@ -35,23 +35,10 @@ class calendar_service:
             "date": schedule_data.date.isoformat(),
             "task_list": [task.to_dict(t) for t in schedule_data.task_list]
         }
-    ##########################3
+
     def create_schedule(schedule: schedule, db):
         try:
             calendar_service.delete_schedule_by_date(schedule.date, schedule.user_id, db)
-            ########## 직접 테스트로 하나로 확정
-            # if isinstance(schedule.task_list, str):
-            #     task_list = [task.from_dict(t) for t in json.loads(schedule.task_list)]
-            # else:
-            #     task_list = schedule.task_list
-            #
-            # new_schedule = calendar_service.to_schedule_db(
-            #     day_schedule_register(
-            #         task_list=task_list,
-            #         date=schedule_data.date
-            #     ), schedule_data.user_id
-            # )
-            # db.add(new_schedule)
             db.add(schedule)
             db.commit()
         except Exception as e:

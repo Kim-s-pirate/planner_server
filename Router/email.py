@@ -33,7 +33,6 @@ body = 'This is a test email sent using yagmail.'
 @router.post("/send_email/register")
 async def send_email(request: Request, email: email_request):
     try:
-        
         email = email.email
         subject = "회원가입 이메일 인증"
         verification_code = ''.join(random.choices('0123456789', k=6))
@@ -47,7 +46,6 @@ async def send_email(request: Request, email: email_request):
         email_service.register_verification(email, verification_code, db)
         return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
     except Exception as e:
-        raise e
         db.rollback()
         return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
     finally:
@@ -63,14 +61,11 @@ async def verification_code(verify: email_verification):
         if found is None:
             return JSONResponse(status_code=404, content={"message": "Email not found"})
         if found.code != code:
-            return JSONResponse(status_code=401, content={"message": "Verification code is incorrect"})
+            return JSONResponse(status_code=400, content={"message": "Verification code is incorrect"})
         state = hash_id()
         email_service.register_state(verify.email, state, db)
-
-
         return JSONResponse(status_code=200, content={"message": "Verification code is correct", "state": state})
     except Exception as e:
-        raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while verifying the code"})
     finally:
         db.close()
