@@ -14,7 +14,7 @@ from Service.email_service import *
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 
-templates = Jinja2Templates(directory="Resource")
+templates = Jinja2Templates(directory="../Resource")
 router = APIRouter()
 #This code test is done. It works well.
 # -> need to be make real email, app password

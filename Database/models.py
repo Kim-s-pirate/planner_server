@@ -2,7 +2,7 @@ import random
 from sqlalchemy import JSON, DateTime, ForeignKey, Column, Index, Integer, PrimaryKeyConstraint, String, Time, Boolean, UniqueConstraint, event
 from sqlalchemy.orm import relationship
 from Database.database import Base, db, engine, get_db
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import hashlib
 
 def hash_id():
@@ -142,7 +142,7 @@ class verification(Base):
     email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
     code = Column(String(10), nullable=False)
     time = Column(DateTime, default=datetime.now, nullable=False)  # 현재 시간을 기본값으로 설정
-    expire_time = Column(DateTime, default=lambda: datetime.now() + datetime.timedelta(minutes=30), nullable=False)
+    expire_time = Column(DateTime, default=lambda: datetime.now() + timedelta(minutes=30), nullable=False)
 
 class state(Base):
     __tablename__ = "states"
