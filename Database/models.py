@@ -1,4 +1,5 @@
 import random
+import uuid
 from sqlalchemy import JSON, DateTime, ForeignKey, Column, Index, Integer, PrimaryKeyConstraint, String, Time, Boolean, UniqueConstraint, event
 from sqlalchemy.orm import relationship
 from Database.database import Base, db, engine, get_db
@@ -6,7 +7,8 @@ from datetime import datetime, timezone, timedelta
 import hashlib
 
 def hash_id():
-    return hashlib.sha256(str(datetime.now()).encode()).hexdigest()
+    unique_string = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f") + str(uuid.uuid4())
+    return hashlib.sha256(unique_string.encode()).hexdigest()
 
 class user(Base): # id
     __tablename__ = "users"

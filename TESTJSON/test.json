@@ -1,0 +1,199 @@
+{
+    "date": "2024-07-22",
+    "to_do_list": [
+        {
+            "date": "2024-07-22",
+            "title": "국어1",
+            "status": "true",
+            "book_id": "5d57679c8a3b3fbfa2590fb1ade5f06788d46f4529f36f3e8d52743b9a36f686"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "국어2",
+            "status": "true",
+            "book_id": "35a3bae3c44f609abbd6be4c109370f7c4c553b24a6395850c69342c8ee96c8f"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "국어3",
+            "status": "false",
+            "book_id": "1431bd114b352b8b664aad1be568c3b36c2cc9a5d5e9016d53bbf44840a97d1d"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "국어4",
+            "status": "false",
+            "book_id": "7207b2c3d207e2a8b179180c12de650a999e6ae4b939bc04595e123460d9eaa1"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "수학1",
+            "status": "false",
+            "book_id": "73c0ba2333ffdbc4dccbef9d769373d1bc82f14553490caa2e9342fd6f3f15b9"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "수학2",
+            "status": "false",
+            "book_id": "fead0f1c5994dee688c8eff81777da6c637e453519b91c9cca8a9dcc7203992d"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "수학3",
+            "status": "false",
+            "book_id": "9ec81e50fbfe719bf3d0237edcdc38b0725cc4c8ecf40a1b71b1ef1cdb46479e"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "수학4",
+            "status": "false",
+            "book_id": "1265238deb451b0bc0e15234966335ff778066ef0446d49db76d725bfde85ca5"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "수학5",
+            "status": "false",
+            "book_id": "4d5abdf743e0861764e4fa56940ab3835d1a253ab38205c2cc670c3d91e3e35e"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "사회1",
+            "status": "false",
+            "book_id": "08010bed51a97fa1dd59097f3f65c2240aad7b51716b23e50f796ee0ce224992"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "사회2",
+            "status": "false",
+            "book_id": "c6c7996a36b5e87eb101ad4609188ca0317089fbdbdc00759947579c5248f938"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "과학1",
+            "status": "false",
+            "book_id": "b9dc30f447e47cf31434edaf727fa5e07d3e60de2c67b280079c48679b016ddf"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "과학2",
+            "status": "false",
+            "book_id": "9f1d18784e034bb4573645e86a458ab08916ae0bcac682ce9f7fd28539c6aaa8"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "과학3",
+            "status": "false",
+            "book_id": "e9e1dba64b3cb5bcdca1f450c30a24a0f04d53c935b505b15ded71089c771d3c"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "과학4",
+            "status": "false",
+            "book_id": "edaf80d834e43d7b79971ef20c140149d498eb5e1d4f7cdb82cb0eacfca11f7a"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "영어1",
+            "status": "false",
+            "book_id": "ccb4dafc12421678bb48b270fc8118fb0a36311906264eec4f6d39f7b0d4f122"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "영어2",
+            "status": "false",
+            "book_id": "506f0b3260a27f7373799aa2203ed8bb5949a7f45ac5fe3643a97ce5b223b1c4"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "영어3",
+            "status": "false",
+            "book_id": "f4a095062926073ef9a178ff24f65942788ad83574faedbf3a30cf2e2f56734c"
+        },
+        {
+            "date": "2024-07-22",
+            "title": "영어4",
+            "status": "false",
+            "book_id": "b11821584ed97f153f78e8f52c93224052bd141d48ea30d76003e31b5d8bd6f2"
+        }
+    ],
+    "time_table_list": [
+
+        {
+            "date": "2024-07-22",
+            "subject_id": "ff94592e61108a948d7c3ad81d142c5aa121c644ccc861aa64c6d108d0cabc1d",
+            "time": [
+                "6:1",
+                "6:2",
+                "6:3",
+                "6:4",
+                "6:5"
+            ]
+        },
+        {
+            "date": "2024-07-22",
+            "subject_id": "63b7e382d01851f61504a24793132352101a2ee4e328b2976b8eee097caec231",
+            "time": [
+                "7:1",
+                "7:2",
+                "7:3",
+                "7:4",
+                "7:5"
+            ]
+        },
+        {
+            "date": "2024-07-22",
+            "subject_id": "369ba48ed2d9886d4c062e0d8d7d76499981e98c404f485980f4cd5464626273",
+            "time": [
+                "8:1",
+                "8:2",
+                "8:3",
+                "8:4",
+                "8:5"
+            ]
+        },
+        {
+            "date": "2024-07-22",
+            "subject_id": "8ce2c4547e375953e077ee12363bdae72486633f5c3d9e79008f5f1cb16d97f1",
+            "time": [
+                "9:1",
+                "9:2",
+                "9:3",
+                "9:4",
+                "9:5"
+            ]
+        },
+        {
+            "date": "2024-07-22",
+            "subject_id": "c9df7248efba74e6bc0ca1ba0a0d539082f107f7a0bb8b439d99faf6d8a1a80c",
+            "time": [
+                "10:1",
+                "10:2",
+                "10:3",
+                "10:4",
+                "10:5"
+            ]
+        }
+    ],
+    "result_list": [
+        {
+            "date": "2024-07-22",
+            "book_id": "b9dc30f447e47cf31434edaf727fa5e07d3e60de2c67b280079c48679b016ddf",
+            "page":[170,171,172,173,174,175,176,177,178]
+        },
+        {
+            "date": "2024-07-22",
+            "book_id": "9f1d18784e034bb4573645e86a458ab08916ae0bcac682ce9f7fd28539c6aaa8",
+            "page":[170,171,172,173,174,175,176,177,178]
+        },
+        {
+            "date": "2024-07-22",
+            "book_id": "e9e1dba64b3cb5bcdca1f450c30a24a0f04d53c935b505b15ded71089c771d3c",
+            "page":[170,171,172,173,174,175,176,177,178]
+        },
+        {
+            "date": "2024-07-22",
+            "book_id": "edaf80d834e43d7b79971ef20c140149d498eb5e1d4f7cdb82cb0eacfca11f7a",
+            "page":[170,171,172,173,174,175,176,177,178]
+        }
+    ]
+}

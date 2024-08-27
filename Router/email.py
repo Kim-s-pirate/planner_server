@@ -13,8 +13,8 @@ from Database.models import hash_id
 from Service.email_service import *
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
-
-templates = Jinja2Templates(directory="../Resource")
+template_dir = os.path.join(os.path.dirname(__file__), "../Resource")
+templates = Jinja2Templates(directory=template_dir)
 router = APIRouter()
 #This code test is done. It works well.
 # -> need to be make real email, app password
@@ -46,6 +46,7 @@ async def send_email(request: Request, email: email_request):
         email_service.register_verification(email, verification_code, db)
         return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
     except Exception as e:
+        raise e
         db.rollback()
         return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
     finally:
