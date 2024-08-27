@@ -72,6 +72,7 @@ async def login(request: Request, user_data: user_login):
     except UserNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "ID or password does not match"})
     except Exception as e:
+        raise e
         return JSONResponse(status_code=500, content={"message": "User login failed"})
     finally:
         db.close()
