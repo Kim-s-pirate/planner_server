@@ -43,7 +43,7 @@ body = 'This is a test email sent using yagmail.'
 async def send_email(request: Request, email: email_request):
     try:
         message = MIMEMultipart()
-        #message["From"] = SMTP_USER
+        message["From"] = SMTP_USER
         message["To"] = email.email
         message["Subject"] = "회원가입 이메일 인증"
         email = email.email
