@@ -133,5 +133,3 @@ async def last_achievement(request: Request, last_date: date):
         return JSONResponse(status_code=500, content={"message": "achievement get failed"})
     finally:
         db.close()
-
-### 과목 id 받아서 해당 과목의 각 책의 성취량 보여주는 코드 필요?
