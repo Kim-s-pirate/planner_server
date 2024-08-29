@@ -33,6 +33,7 @@ class user(BaseEntity): # id
     time_table = relationship("time_table", back_populates="user", cascade="all, delete, save-update")
     to_do = relationship("to_do", back_populates="user", cascade="all, delete, save-update")
     result = relationship("result", back_populates="user", cascade="all, delete, save-update")
+    d_day = relationship("d_day", back_populates="user", cascade="all, delete, save-update")
     #내가 보기엔 굳이 userid랑 FK로 연결할 필요가 없어보임. 그냥 id로 연결해도 될듯
     #하지만 userid를 항상 쿼리해야해서 시간 복잡도가 올라갈 수도 있어서 user를 제외한 참조들을 id를 쓰는 것이 좋아보임
 
@@ -157,3 +158,12 @@ class state(BaseEntity):
     __tablename__ = "states"
     email = Column(String(100), index=True, unique=True, nullable=False, primary_key=True)
     state = Column(String(100), nullable=False)
+
+class d_day(BaseEntity):
+    __tablename__ = "d_day"
+    id = Column(String(100), default=hash_id, primary_key=True, index=True, unique=True, nullable=False)
+    user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), primary_key=True, nullable=False)
+    date = Column(String(50), nullable=False)
+    title = Column(String(50), nullable=False)
+    user = relationship("user", back_populates="d_day")
+    __table_args__ = (UniqueConstraint('user_id', 'date', 'title', name='unique_user_id_date_title'),)
