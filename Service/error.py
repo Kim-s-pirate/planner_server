@@ -191,3 +191,8 @@ class StateMismatchError(Exception):
     def __init__(self, message="State mismatch"):
         self.message = message
         super().__init__(self.message)
+
+class DDayAlreadyExistsError(Exception):
+    def __init__(self, message="D-Day already exists"):
+        self.message = message
+        super().__init__(self.message)

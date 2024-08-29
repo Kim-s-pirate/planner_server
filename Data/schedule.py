@@ -4,10 +4,10 @@ from typing import List, Optional
 from Data.task import task
 
 class day_schedule_register(BaseModel):
-    task_list: Optional[List['task']] = []
     date: date
+    task_list: Optional[List['task']] = []
 
 class day_schedule(BaseModel):
-    task_list: List['task'] = []
-    user_id: str
     date: date
+    user_id: str
+    task_list: List['task'] = []
