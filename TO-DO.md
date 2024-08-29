@@ -24,3 +24,6 @@
 # 공동
 1. fastapi 배포 위한 필수단계 공부
 2. aws, jenkins 또는 github action(db를 뒤에 놓고 앞단에 접속하도록 하는 방식)
+
+
+# FastAPI에서는 slowapi나 starlette.middleware와 같은 미들웨어를 사용해 쉽게 Rate Limiting을 구현할 수 있습니다.

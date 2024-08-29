@@ -5,13 +5,14 @@ from Service.error import *
 
 # id
 
-COLOR_SET = {'#21ACA9', '#34CDEF', '#7475BB',
-             '#756C86', '#ACB6B3', '#B5E045',
-             '#BFA8EE', '#CB7D60', '#E35BE5',
-             '#EE5444', '#EF5A68', '#F7969A',
-             '#F8CA8F', '#EDED2A', '#FFD749',
-             '#809A79', '#C7DBF8', '#FF94E7',
-             '#FF9568', '#D7FFAF'}
+COLOR_SET = {'#FF0000', '#FF6A9E', '#FBB8CA',
+             '#9E1A1A', '#BC1FFF', '#DA84FF',
+             '#8113AF', '#0307FF', '#76A6FF',
+             '#D2E2FF', '#002260', '#057917',
+             '#13AF2B', '#77EB39', '#1A5022',
+             '#FFE209', '#FFF8A7', '#A08E04',
+             '#F67F00', '#EFAE67', '#BD611A',
+             '#000000', '#858585', '#FFFFFF'}
 
 class subject_service:
     def to_subject_db(subject_register: subject_register, user_id: str):
