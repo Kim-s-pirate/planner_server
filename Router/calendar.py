@@ -68,6 +68,7 @@ async def get_day_schedule(request: Request, date: date):
     finally:
         db.close()
 
+#month_schedule에는 일정과 월간, 주간 목표를 같이 보내줘야함
 @router.get("/month_schedule")
 async def get_month_schedule(request: Request, year: str, month: str):
     db = get_db()
@@ -94,64 +95,65 @@ async def get_month_schedule(request: Request, year: str, month: str):
     finally:
         db.close()
 
-@router.delete("/delete/day_schedule/{date}")
-async def delete_schedule(request: Request, date: date):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        db.execute(text("SAVEPOINT savepoint"))
-        requester_id = AuthorizationService.verify_session(request, db)["id"]
-        result = calendar_service.delete_schedule_by_date(date, requester_id, db)
-        if not result:
-            raise ScheduleNotFoundError
-        return JSONResponse(status_code=200, content={"message": "Schedule deleted successfully"})
-    except SessionIdNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except ScheduleNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=404, content={"message": "Schedule not found"})
-    except Exception as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=500, content={"message": "Schedule delete failed"})
-    finally:
-        db.close()
+# @router.delete("/delete/day_schedule/{date}")
+# async def delete_schedule(request: Request, date: date):
+#     db = get_db()
+#     try:
+#         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+#         db.execute(text("SAVEPOINT savepoint"))
+#         requester_id = AuthorizationService.verify_session(request, db)["id"]
+#         result = calendar_service.delete_schedule_by_date(date, requester_id, db)
+#         if not result:
+#             raise ScheduleNotFoundError
+#         return JSONResponse(status_code=200, content={"message": "Schedule deleted successfully"})
+#     except SessionIdNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=401, content={"message": "Token not found"})
+#     except SessionVerificationError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#     except SessionExpiredError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=440, content={"message": "Session expired"})
+#     except ScheduleNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=404, content={"message": "Schedule not found"})
+#     except Exception as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=500, content={"message": "Schedule delete failed"})
+#     finally:
+#         db.close()
 
-@router.delete("/delete/month_schedule")
-async def delete_schedule(request: Request, year: str, month: str):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        db.execute(text("SAVEPOINT savepoint"))
-        requester_id = AuthorizationService.verify_session(request, db)["id"]
-        result = calendar_service.delete_schedule_by_month(year, month, requester_id, db)
-        if not result:
-            raise ScheduleNotFoundError
-        return JSONResponse(status_code=200, content={"message": "Schedule deleted successfully"})
-    except SessionIdNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except ScheduleNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=404, content={"message": "Schedule not found"})
-    except Exception as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=500, content={"message": "Schedule delete failed"})
-    finally:
-        db.close()
+# @router.delete("/delete/month_schedule")
+# async def delete_schedule(request: Request, year: str, month: str):
+#     db = get_db()
+#     try:
+#         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+#         db.execute(text("SAVEPOINT savepoint"))
+#         requester_id = AuthorizationService.verify_session(request, db)["id"]
+#         result = calendar_service.delete_schedule_by_month(year, month, requester_id, db)
+#         if not result:
+#             raise ScheduleNotFoundError
+#         return JSONResponse(status_code=200, content={"message": "Schedule deleted successfully"})
+#     except SessionIdNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=401, content={"message": "Token not found"})
+#     except SessionVerificationError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#     except SessionExpiredError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=440, content={"message": "Session expired"})
+#     except ScheduleNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=404, content={"message": "Schedule not found"})
+#     except Exception as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=500, content={"message": "Schedule delete failed"})
+#     finally:
+#         db.close()
 
+#create에서 추가, 삭제, 생성을 모두 하는 식으로 변경
 @router.post("/register/goal")
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     db = get_db()
@@ -181,30 +183,30 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
     finally:
         db.close()
 
-#edit_calendar_goal 라우터 추가
-#값이 안들어왔을때 에러 처리
-@router.delete("/delete/goal")
-async def delete_calendar_goal(request: Request, year: int, month: int):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        db.execute(text("SAVEPOINT savepoint"))
-        session = AuthorizationService.verify_session(request, db)
-        user_id = session['id']
-        calendar_service.delete_goal(year, month, user_id, db)
-        db.commit()
-        return JSONResponse(status_code=200, content={"message": "Goal deleted successfully"})
-    except SessionIdNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except Exception as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=500, content={"message": "There was some error while deleting the goal"})
-    finally:
-        db.close()
+# #edit_calendar_goal 라우터 추가
+# #값이 안들어왔을때 에러 처리
+# @router.delete("/delete/goal")
+# async def delete_calendar_goal(request: Request, year: int, month: int):
+#     db = get_db()
+#     try:
+#         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+#         db.execute(text("SAVEPOINT savepoint"))
+#         session = AuthorizationService.verify_session(request, db)
+#         user_id = session['id']
+#         calendar_service.delete_goal(year, month, user_id, db)
+#         db.commit()
+#         return JSONResponse(status_code=200, content={"message": "Goal deleted successfully"})
+#     except SessionIdNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=401, content={"message": "Token not found"})
+#     except SessionVerificationError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#     except SessionExpiredError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=440, content={"message": "Session expired"})
+#     except Exception as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=500, content={"message": "There was some error while deleting the goal"})
+#     finally:
+#         db.close()

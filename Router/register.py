@@ -1,3 +1,4 @@
+from typing_extensions import deprecated
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from Database.database import db, get_db, rollback_to_savepoint
@@ -140,6 +141,7 @@ async def edit_user_userid(request: Request, user_data: user_userid, id: str):
     finally:
         db.close()
 
+@deprecated
 @router.post("/edit/user/email/{id}")
 async def edit_user_email(request: Request, user_data: user_email, id: str):
     db = get_db()
@@ -210,6 +212,8 @@ async def edit_user_username(request: Request, user_data: user_username, id: str
         return JSONResponse(status_code=500, content={"message": "User edit failed"})
     finally:
         db.close()
+
+#username과 id를 동시에 수정하는 코드 작성 바람
 
 @router.post("/edit/user/password/{id}")
 async def edit_user_password(request: Request, user_data: user_password, id: str):
