@@ -34,7 +34,10 @@ class calendar_service:
             "date": schedule_data.date.isoformat(),
             "task_list": [task.to_dict(t) for t in schedule_data.task_list]
         }
-
+    
+    #기존의것 삭제하지 말고 변경해서 커밋
+    #->들어왔는데 빈거면 삭제 그렇지 않으면 변경
+    #-> 라우터에 있는 delete는 없애기
     def create_schedule(schedule: schedule, db):
         try:
             calendar_service.delete_schedule_by_date(schedule.date, schedule.user_id, db)

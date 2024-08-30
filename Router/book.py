@@ -114,6 +114,7 @@ async def get_book_by_id(request: Request, id: str):
     finally:
         db.close()
 
+#굳이 존재할 필요가 없을 듯
 @router.get("/book/book_subject/{id}")
 async def get_book_subject(request: Request, id: str):
     db = get_db()
@@ -182,6 +183,11 @@ async def get_book_list(request: Request):
         return JSONResponse(status_code=500, content={"message": "Book find failed"})
     finally:
         db.close()
+
+#과목을 기준으로 책을 전체 반환하는 라우터 코드 추가
+
+#책은 활성화 비활성화 모두를 반환하지만 거기서 사용하는 몫은 프론트에게 전가
+#예외는 활성화책 비활성화책 목록 반환하는 엔드포인트만 냅두면 됌
 
 @router.get("/book/book_list/{subject_id}")
 async def book_list_by_subject(request: Request, subject_id: str):
@@ -259,6 +265,7 @@ async def book_list_by_status(request: Request, status: bool):
         db.close()
 
 # 통합 검색 기능
+# 알고리즘 최적화
 @router.get("/search/book/{keyword}")
 async def book_search(request: Request, keyword: str):
     db = get_db()
@@ -306,6 +313,7 @@ async def book_search(request: Request, keyword: str):
     finally:
         db.close()
 
+#전체 edit은 디자인 보고 채용 여부 결정
 @router.post("/edit/book_title/{id}")
 async def edit_title(request: Request, book_data: book_title, id: str):
     db = get_db()

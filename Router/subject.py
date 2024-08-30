@@ -102,6 +102,7 @@ async def get_subject_by_id(request: Request, id: str):
         db.close()
 
 # 통합 검색 기능으로 리팩토링
+#검색 알고리즘 최적화 필요
 @router.get("/search/subject/{title}")
 async def get_subject_by_title(request: Request, title: str):
     db = get_db()
