@@ -62,6 +62,7 @@ async def send_email(request: Request, email: email_request):
             password=SMTP_PASSWORD
         )
 
+        email_service.register_verification(email, verification_code, db)
         return {"message": "Email sent successfully!"}
     except Exception as e:
         raise e
