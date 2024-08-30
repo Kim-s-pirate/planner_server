@@ -32,6 +32,15 @@ async def book_register(request: Request, book_data: book_register):
     except SessionExpiredError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except EmptyTitleError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Title cannot be blank"})
+    except NegativePageNumberError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Page number cannot be negative"})
+    except PageRangeError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Start page cannot be greater than end page"})
     except SubjectNotFoundError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Subject not found"})
@@ -322,6 +331,9 @@ async def edit_title(request: Request, book_data: book_title, id: str):
     except UnauthorizedError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+    except EmptyTitleError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Title cannot be blank"})
     except BookAlreadyExistsError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=409, content={"message": "Book already exists"})

@@ -61,7 +61,7 @@ async def send_email(request: Request, email: email_request):
             username=SMTP_USER,
             password=SMTP_PASSWORD
         )
-        
+
         return {"message": "Email sent successfully!"}
     except Exception as e:
         raise e

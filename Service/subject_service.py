@@ -15,14 +15,19 @@ COLOR_SET = {'#FF0000', '#FF6A9E', '#FBB8CA',
              '#000000', '#858585', '#FFFFFF'}
 
 class subject_service:
+    def validate_subject_data(subject_register: subject_register):
+        if subject_register.title == "" or subject_register.title is None:
+            raise EmptyTitleError
+
     def to_subject_db(subject_register: subject_register, user_id: str):
+        subject_service.validate_subject_data(subject_register)
         try:
             return subject(
                 user_id=user_id,
                 title=subject_register.title
             )
-        except:
-            raise InvalidSubjectDataError
+        except Exception as e:
+            raise e
 
     def to_subject_data(subject_entity: subject):
         return subject_data(
@@ -73,6 +78,8 @@ class subject_service:
         return random.choice(remain_color)
 
     def edit_title(new_title: str, id: str, user_id: str, db):
+        if new_title == "" or new_title is None:
+            raise EmptyTitleError
         if subject_service.find_another_subject_by_title(new_title, id, user_id, db):
             raise SubjectAlreadyExistsError
         found_subject = subject_service.find_subject_by_id(id, db)
