@@ -20,6 +20,7 @@ class email_service:
             found.code = code
             return True
         db.add(email_service.to_verification_db(email, code))
+        db.commit()
         return True
 
     def delete_expired_verification(db):
