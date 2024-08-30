@@ -1,8 +1,7 @@
 from typing import List
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from Data.schedule import day_schedule, day_schedule_register
-from Data.calendar import calendar_goal_register, calendar_goal
+from Data.calendar import *
 from Database.database import get_db, rollback_to_savepoint
 from Data.user import *
 from fastapi import APIRouter

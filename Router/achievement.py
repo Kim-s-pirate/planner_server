@@ -133,3 +133,21 @@ async def last_achievement(request: Request, last_date: date):
         return JSONResponse(status_code=500, content={"message": "achievement get failed"})
     finally:
         db.close()
+
+@router.get("/achievement/all_achievement")
+async def all_achievement(request: Request, start_date: date, end_date: date):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        progress = achievement_service.get_all_progress(start_date, requester_id, requester_id, db)
+        return JSONResponse(status_code=200, content={"message": progress})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "achievement get failed"})
+    finally:
+        db.close()

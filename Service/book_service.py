@@ -16,8 +16,19 @@ INITIAL_LIST = [
 
 
 class book_service:
+    def validate_book_data(book_register: book_register):
+        if book_register.title == "" or book_register.title is None:
+            raise EmptyTitleError
+        if book_register.start_page < 0:
+            raise NegativePageNumberError
+        if book_register.end_page < 0:
+            raise NegativePageNumberError
+        if book_register.start_page > book_register.end_page:
+            raise PageRangeError
+
     def to_book_db(book_register: book_register, user_id: str):
         try:
+            book_service.validate_book_data(book_register)
             return book(
                 user_id=user_id,
                 title=book_register.title,
@@ -27,8 +38,8 @@ class book_service:
                 **({"status": book_register.status} if book_register.status is not None else True),
                 **({"subject_id": book_register.subject_id} if book_register.subject_id is not None else {})
             )
-        except:
-            raise InvalidBookDataError
+        except Exception as e:
+            raise e
 
     def to_book_data(book_entity: book):
         return book_data(
@@ -89,6 +100,8 @@ class book_service:
         return db.query(book).filter(book.title == title, book.user_id == user_id).first() is not None
 
     def edit_title(new_title: str, id: str, user_id: str, db):
+        if new_title == "" or new_title is None:
+            raise EmptyTitleError
         if book_service.is_title_exists(new_title, user_id, db):
             raise BookAlreadyExistsError
         found_book = book_service.find_book_by_id(id, db)
@@ -107,7 +120,9 @@ class book_service:
         db.commit()
 
     def edit_page(new_start_page: int, new_end_page: int, id: str, db):
-        if new_start_page < 0 or new_end_page < 0:
+        if new_start_page < 0:
+            raise NegativePageNumberError
+        if new_end_page < 0:
             raise NegativePageNumberError
         if new_start_page > new_end_page:
             raise PageRangeError

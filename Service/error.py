@@ -131,6 +131,11 @@ class NegativePageNumberError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class EmptyTitleError(Exception):
+    def __init__(self, message="Title cannot be blank"):
+        self.message = message
+        super().__init__(self.message)
+
 #calendar
 class ScheduleNotFoundError(Exception):
     def __init__(self, message="Schedule not found"):

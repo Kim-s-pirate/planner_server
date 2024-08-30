@@ -1,10 +1,10 @@
 from datetime import timedelta
-import json
-from Database.models import result
+from Database.models import result, book
 from Data.achievement import *
 from Database.database import db
 from Service.book_service import *
 from Service.error import *
+import json
 
 
 class achievement_service:
@@ -84,4 +84,26 @@ class achievement_service:
                 book_progress[book_id] = round(progress, 3)
         return book_progress
 
-    ### 해당하는 기간 중 특정 과목에 대한 성취도 반환
+    def get_all_progress(start_date: date, end_date: date, user_id: str, db):
+        results = db.query(result).filter(
+            result.date >= start_date,
+            result.date <= end_date,
+            result.user_id == user_id
+        ).all()
+        progress_by_book = {}
+        for res in results:
+            if res.book_id not in progress_by_book:
+                progress_by_book[res.book_id] = set()
+            progress_by_book[res.book_id].update(res.page)
+        book_progress = {}
+        all_books = db.query(book).all()
+        for book_ in all_books:
+            book_id = book_.id
+            if book_id in progress_by_book:
+                pages = progress_by_book[book_id]
+                total_page = book_.end_page - book_.start_page + 1
+                progress = len(pages) * 100 / total_page
+                book_progress[book_id] = round(progress, 3)
+            else:
+                book_progress[book_id] = 0.0
+        return book_progress

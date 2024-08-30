@@ -35,6 +35,9 @@ async def subject_create(request: Request, subject_data: subject_register):
     except SessionExpiredError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except EmptyTitleError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Title cannot be blank"})
     except ColorExhaustedError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=507, content={"message": "No more colors available in the color set"})
@@ -224,6 +227,9 @@ async def edit_title(request: Request, new_title: subject_title, id: str):
     except UnauthorizedError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this subject"})
+    except EmptyTitleError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Title cannot be blank"})
     except SubjectAlreadyExistsError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=409, content={"message": "Subject already exists"})

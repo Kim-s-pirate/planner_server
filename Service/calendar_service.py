@@ -1,6 +1,5 @@
 from sqlalchemy import extract
 from Database.models import *
-from Data.schedule import *
 from Data.calendar import *
 from Data.task import task
 from Database.database import db
