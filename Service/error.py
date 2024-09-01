@@ -74,6 +74,11 @@ class InappositePasswordLengthError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class InvalidSoundSettingError(Exception):
+    def __init__(self, message="Invalid sound setting"):
+        self.message = message
+        super().__init__(self.message)
+
 # subject
 class SubjectNotFoundError(Exception):
     def __init__(self, message="Subject not found"):
@@ -199,5 +204,10 @@ class StateMismatchError(Exception):
 
 class DDayAlreadyExistsError(Exception):
     def __init__(self, message="D-Day already exists"):
+        self.message = message
+        super().__init__(self.message)
+
+class ParameterError(Exception):
+    def __init__(self, message="Parameter error"):
         self.message = message
         super().__init__(self.message)

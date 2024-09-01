@@ -1,6 +1,5 @@
 from datetime import date
 import json
-
 from sqlalchemy import text
 from Data.planner import *
 from Data.result import result_data
@@ -15,20 +14,6 @@ from Service.subject_service import *
 
 
 class planner_service:
-    # def to_planner_db(planner_data: planner_data, db):
-    #     return planner(
-    #         date=planner_data.date,
-    #         user_id=planner_data.user_id,
-    #         study_time=planner_data.study_time
-    #     )
-    
-    def to_planner_data(planner: planner):
-        return planner_data(
-            date=planner.date,
-            user_id=planner.user_id,
-            study_time=planner.study_time
-        )
-
     def to_to_do_db(to_do_data: to_do_register, user_id: str, db):
         return to_do(
             date=to_do_data.date,
@@ -111,7 +96,6 @@ class planner_service:
         time_table_entity_list = [planner_service.to_time_table_data(time_table_entity) for time_table_entity in time_table_entity_list]
         exist_time_table = set(time_table_entity_list)
         time_table_data_set = set(time_table_list)
-        []
         to_delete_time_table = exist_time_table - time_table_data_set
         to_add_time_table = time_table_data_set - exist_time_table
         for time_table_data in to_delete_time_table:
@@ -139,27 +123,9 @@ class planner_service:
             db.add(result)
         db.commit()
 
-        planner_entity = planner_service.find_planner_by_date(date, user_id, db)
-        if planner_entity == None:
-            planner_entity = planner(
-                date=date,
-                user_id=user_id,
-            )
-            db.add(planner_entity)
-        db.commit()
-
 
     def find_result_by_data(result_data: result_register, user_id: str, db):
         return db.query(result).filter(result.date == result_data.date, result.user_id == user_id, result.book_id == result_data.book_id).first()
-
-    def find_planner_by_date(date: date, user_id: str, db):
-        return db.query(planner).filter(planner.date == date, planner.user_id == user_id).first()
-
-    def delete_planner_by_date(date: date, user_id: str, db):
-        db.query(planner).filter(planner.date == date, planner.user_id == user_id).delete()
-        db.query(time_table).filter(time_table.date == date, time_table.user_id == user_id).delete()
-        db.query(to_do).filter(to_do.date == date, to_do.user_id == user_id).delete()
-        
 
     def find_to_do_by_date(date: date, user_id: str, db):
         return db.query(to_do).filter(to_do.date == date, to_do.user_id == user_id).all()
@@ -172,15 +138,6 @@ class planner_service:
     
     def delete_time_table_by_date(date: date, user_id: str, db):
         db.query(time_table).filter(time_table.date == date, time_table.user_id == user_id).delete()
-
-    def register_planner_study_time(date: date, user_id: str, db):
-        time_table_list = planner_service.find_time_table_by_date(date, user_id, db)
-        study_time = 0
-        for time_table_data in time_table_list:
-            time_list = time_table_data.time
-            study_time += len(time_list)*10
-        planner_entity = planner_service.find_planner_by_date(date, user_id, db)
-        planner_entity.study_time = study_time
 
     def verify_planner(planner_data: planner_register, user_id, db):
         time_set_list = [set(time_table.time) for time_table in planner_data.time_table_list]
@@ -209,10 +166,6 @@ class planner_service:
                 raise PageRangeError
             
         return planner_data
-    
-    def get_planner(user_id: str, date: date, db):
-        planner_list = db.query(planner).filter(planner.user_id == user_id, planner.date == date).all()
-        return planner_list
     
     def find_result_by_date(date: date, user_id: str, db):
         return db.query(result).filter(result.date == date, result.user_id == user_id).all()

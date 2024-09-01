@@ -26,6 +26,7 @@ class user_data(BaseModel):
     userid: str
     username: str
     email: str
+    sound_setting: int
 
 class user_password(BaseModel):
     password: str

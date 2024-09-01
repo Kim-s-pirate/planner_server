@@ -36,7 +36,13 @@ class d_day_service:
     def delete_d_day_by_id(id: str, db):
         try:
             db.query(d_day).filter(d_day.id == id).delete()
-            db.commit()
+        except Exception as e:
+            raise e
+        
+    def set_d_day_star(id: str, star: bool, db):
+        try:
+            d_day = db.query(d_day).filter(d_day.id == id).first()
+            d_day.star = star
         except Exception as e:
             raise e
     
