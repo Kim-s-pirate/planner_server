@@ -111,6 +111,7 @@ class planner_service:
         time_table_entity_list = [planner_service.to_time_table_data(time_table_entity) for time_table_entity in time_table_entity_list]
         exist_time_table = set(time_table_entity_list)
         time_table_data_set = set(time_table_list)
+        []
         to_delete_time_table = exist_time_table - time_table_data_set
         to_add_time_table = time_table_data_set - exist_time_table
         for time_table_data in to_delete_time_table:
