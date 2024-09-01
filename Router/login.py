@@ -190,3 +190,20 @@ async def auth(request: Request, naver_data: naver_data):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
     
+
+@router.post("/account/sound_setting")
+async def sound_setting(request: Request, sound_setting: int):
+    db = get_db()
+    try:
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        if user_service.update_user_sound_setting(user_id, sound_setting, db):
+            return JSONResponse(status_code=200, content={"message": "Sound setting updated successfully"})
+        else:
+            raise Exception
+    except InvalidSoundSettingError as e:
+        return JSONResponse(status_code=400, content={"message": "Invalid sound setting"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Sound setting update failed"})
+    finally:
+        db.close()

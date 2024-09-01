@@ -5,6 +5,9 @@ from Database.database import db
 from Service.error import *
 
 class user_service:
+    USER_SOUND_MAX = 10
+    USER_SOUND_MIN = 0
+    
     def to_user_db(user_register: user_register):
         try:
             return user(
@@ -21,7 +24,8 @@ class user_service:
             id=user_entity.id,
             userid=user_entity.userid,
             username=user_entity.username,
-            email=user_entity.email
+            email=user_entity.email,
+            sound_setting=user_entity.sound_setting
         )
     #이 부분 비밀번호가 들어가기 때문에 수정해야함
 
@@ -154,3 +158,12 @@ class user_service:
         )
         user_service.create_user(new_user, db)
         return new_user
+    
+    def update_user_sound_setting(user_id: str, sound_setting: int, db):
+        found_user = user_service.find_user_by_id(user_id, db)
+        if sound_setting < user_service.USER_SOUND_MIN or sound_setting > user_service.USER_SOUND_MAX:
+            raise InvalidSoundSettingError
+        if not found_user:
+            raise UserNotFoundError
+        found_user.sound_setting = sound_setting
+        return True

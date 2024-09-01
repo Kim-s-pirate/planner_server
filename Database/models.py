@@ -25,6 +25,7 @@ class user(BaseEntity): # id
     email = Column(String(100), index=True, unique=True, nullable=False)
     password = Column(String(100), nullable=False)
     oauth = Column(Boolean, default=False, nullable=False)
+    sound_setting = Column(Integer, default=0, nullable=False)
     books = relationship("book", back_populates="user", cascade="all, delete, save-update")
     subjects = relationship("subject", back_populates="user", cascade="all, delete, save-update")
     schedules = relationship("schedule", back_populates="user", cascade="all, delete, save-update")
@@ -110,20 +111,8 @@ class goal(BaseEntity):#id
     year = Column(Integer, primary_key=True, index=True, nullable=False)
     month = Column(Integer, primary_key=True, index=True, nullable=False)
     user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
-    month_goal = Column(String(300), nullable=True)
     week_goal = Column(String(500), nullable=True)
     user = relationship("user", back_populates="goals")
-
-class planner(BaseEntity): # id
-    __tablename__ = "planner"
-    date = Column(String(50), index=True, nullable=False)
-    user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
-    study_time = Column(Integer, nullable=False, default=0)
-    #해당 컬럼에 트리거 필요
-    user = relationship("user", back_populates="planner")
-    __table_args__ = (PrimaryKeyConstraint('date', 'user_id'), UniqueConstraint('user_id', 'date', name='unique_user_id_date'),)
-
-    #planner에 추가 색에 대한 column이 필요함
 
 class time_table(BaseEntity): # id
     __tablename__ = "time_table"
@@ -165,5 +154,6 @@ class d_day(BaseEntity):
     user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), primary_key=True, nullable=False)
     date = Column(String(50), nullable=False)
     title = Column(String(50), nullable=False)
+    star = Column(Boolean, default=False, nullable=False, default=False)
     user = relationship("user", back_populates="d_day")
     __table_args__ = (UniqueConstraint('user_id', 'date', 'title', name='unique_user_id_date_title'),)
