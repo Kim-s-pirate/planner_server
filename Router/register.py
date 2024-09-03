@@ -141,43 +141,43 @@ async def edit_user_userid(request: Request, user_data: user_userid, id: str):
     finally:
         db.close()
 
-@deprecated
-@router.post("/edit/user/email/{id}")
-async def edit_user_email(request: Request, user_data: user_email, id: str):
-    db = get_db()
-    try:
-        db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
-        db.execute(text("SAVEPOINT savepoint"))
-        requester_id = AuthorizationService.verify_session(request, db)["id"]
-        AuthorizationService.check_authorization(requester_id, id)
-        user_service.edit_email(user_data.email, id, db)
-        return JSONResponse(status_code=200, content={"message": "User edited successfully"})
-    except SessionIdNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except UnauthorizedError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this user"})
-    except InvalidUserDataError:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=400, content={"message": "Email cannot be empty"})
-    except UserNotFoundError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=404, content={"message": "User not found"})
-    except UserAlreadyExistsError as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=409, content={"message": "User already exists"})
-    except Exception as e:
-        rollback_to_savepoint(db)
-        return JSONResponse(status_code=500, content={"message": "User edit failed"})
-    finally:
-        db.close()
+
+# @router.post("/edit/user/email/{id}")
+# async def edit_user_email(request: Request, user_data: user_email, id: str):
+#     db = get_db()
+#     try:
+#         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
+#         db.execute(text("SAVEPOINT savepoint"))
+#         requester_id = AuthorizationService.verify_session(request, db)["id"]
+#         AuthorizationService.check_authorization(requester_id, id)
+#         user_service.edit_email(user_data.email, id, db)
+#         return JSONResponse(status_code=200, content={"message": "User edited successfully"})
+#     except SessionIdNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=401, content={"message": "Token not found"})
+#     except SessionVerificationError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#     except SessionExpiredError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=440, content={"message": "Session expired"})
+#     except UnauthorizedError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this user"})
+#     except InvalidUserDataError:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=400, content={"message": "Email cannot be empty"})
+#     except UserNotFoundError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=404, content={"message": "User not found"})
+#     except UserAlreadyExistsError as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=409, content={"message": "User already exists"})
+#     except Exception as e:
+#         rollback_to_savepoint(db)
+#         return JSONResponse(status_code=500, content={"message": "User edit failed"})
+#     finally:
+#         db.close()
 
 @router.post("/edit/user/username/{id}")
 async def edit_user_username(request: Request, user_data: user_username, id: str):
