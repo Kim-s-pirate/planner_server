@@ -162,7 +162,7 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
         db.execute(text("SAVEPOINT savepoint"))
         session = AuthorizationService.verify_session(request, db)
         user_id = session['id']
-        if goal_data.month_goal == None and goal_data.week_goal == None:
+        if goal_data.goal == None:
             calendar_service.delete_goal(goal_data.year, goal_data.month, user_id, db)
         else:
             calendar_service.register_goal(goal_data, user_id, db)
@@ -210,3 +210,36 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
 #         return JSONResponse(status_code=500, content={"message": "There was some error while deleting the goal"})
 #     finally:
 #         db.close()
+
+@router.get("/calendar")
+async def get_calendar(request: Request, year: int, month: int):
+    db = get_db()
+    try:
+        session = AuthorizationService.verify_session(request, db)
+        user_id = session['id']
+        schedule = calendar_service.find_schedule_by_month(year, month, user_id, db)
+        goal = calendar_service.find_goal(year, month, user_id, db)
+        data = {}
+        if schedule:
+            schedule = [calendar_service.to_schedule_data(s) for s in schedule]
+            schedule = [calendar_service.schedule_to_dict(s) for s in schedule]
+            for s in schedule:
+                del s['user_id']
+            data['schedule'] = schedule
+        if goal:
+            goal = calendar_service.to_calendar_goal_data(goal).dict()
+            del goal['user_id']
+            data['goal'] = goal
+        
+        return JSONResponse(status_code=200, content=data)
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except Exception as e:
+        raise e
+        return JSONResponse(status_code=500, content={"message": "There was some error while getting the calendar"})
+
+        

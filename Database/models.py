@@ -30,7 +30,6 @@ class user(BaseEntity): # id
     subjects = relationship("subject", back_populates="user", cascade="all, delete, save-update")
     schedules = relationship("schedule", back_populates="user", cascade="all, delete, save-update")
     goals = relationship("goal", back_populates="user", cascade="all, delete, save-update")
-    planner = relationship("planner", back_populates="user", cascade="all, delete, save-update")
     time_table = relationship("time_table", back_populates="user", cascade="all, delete, save-update")
     to_do = relationship("to_do", back_populates="user", cascade="all, delete, save-update")
     result = relationship("result", back_populates="user", cascade="all, delete, save-update")
@@ -111,7 +110,7 @@ class goal(BaseEntity):#id
     year = Column(Integer, primary_key=True, index=True, nullable=False)
     month = Column(Integer, primary_key=True, index=True, nullable=False)
     user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
-    week_goal = Column(String(500), nullable=True)
+    goal = Column(String(500), nullable=True)
     user = relationship("user", back_populates="goals")
 
 class time_table(BaseEntity): # id
@@ -154,6 +153,6 @@ class d_day(BaseEntity):
     user_id = Column(String(100), ForeignKey('users.id', ondelete="CASCADE", onupdate="CASCADE"), primary_key=True, nullable=False)
     date = Column(String(50), nullable=False)
     title = Column(String(50), nullable=False)
-    star = Column(Boolean, default=False, nullable=False, default=False)
+    star = Column(Boolean, default=False, nullable=False)
     user = relationship("user", back_populates="d_day")
     __table_args__ = (UniqueConstraint('user_id', 'date', 'title', name='unique_user_id_date_title'),)
