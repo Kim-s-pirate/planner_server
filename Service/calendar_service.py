@@ -84,26 +84,11 @@ class calendar_service:
         db.commit()
         return result
 
-
-
-
-
-
-###############################3
-
-
-
-
-
-
-
-
     def to_calendar_goal_db(goal_data: calendar_goal_register, user_id: str) -> goal:
         return goal(
             year=goal_data.year,
             month=goal_data.month,
-            month_goal=goal_data.month_goal,
-            week_goal=goal_data.week_goal,
+            goal=goal_data.goal,
             user_id=user_id
         )
 
@@ -111,8 +96,7 @@ class calendar_service:
         return calendar_goal(
             year=goal_entity.year,
             month=goal_entity.month,
-            month_goal=goal_entity.month_goal,
-            week_goal=goal_entity.week_goal,
+            goal=goal_entity.goal,
             user_id=goal_entity.user_id
         )
 
@@ -127,8 +111,7 @@ class calendar_service:
         try:
             existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, user_id, db)
             if existing_goal:
-                existing_goal.month_goal = goal_data.month_goal
-                existing_goal.week_goal = goal_data.week_goal
+                existing_goal.goal = goal_data.goal
             else:
                 new_goal = calendar_service.to_calendar_goal_db(goal_data, user_id)
                 db.add(new_goal)
