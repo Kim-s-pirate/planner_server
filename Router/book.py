@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from fastapi import Request
 from Data.book import *
 from Service.book_service import *
+from collections import defaultdict
 
 router = APIRouter()
 
@@ -184,7 +185,52 @@ async def get_book_list(request: Request):
     finally:
         db.close()
 
-#과목을 기준으로 책을 전체 반환하는 라우터 코드 추가
+@router.get("/book/book_list_by_subject")
+async def get_book_list_by_subject(request: Request):
+    db = get_db()
+    try:
+        requester_id = AuthorizationService.verify_session(request, db)["id"]
+        book_list = book_service.find_book_by_user_id(requester_id, db)
+        if not book_list:
+            raise BookNotFoundError
+        grouped_books = defaultdict(list)
+        for book in book_list:
+            user = user_service.find_user_by_id(book.user_id, db)
+            if not user:
+                raise UserNotFoundError
+            user = user_service.to_user_data(user).__dict__
+            subject = subject_service.find_subject_by_id(book.subject_id, db)
+            if not subject:
+                subject = None
+            else:
+                subject = subject_service.to_subject_data(subject).__dict__
+                del subject['user_id']
+            book = book_service.to_book_data(book).__dict__
+            book['user'] = user
+            del book['subject_id']
+            del book['user_id']
+            grouped_books[subject['id']].append(book)
+        result = []
+        for subject_id, books in grouped_books.items():
+            subject_info = subject_service.find_subject_by_id(subject_id, db)
+            if subject_info:
+                subject_info = subject_service.to_subject_data(subject_info).__dict__
+                del subject_info['user_id']
+                subject_info['books'] = books
+                result.append(subject_info)
+        return JSONResponse(status_code=200, content={"message": result})
+    except SessionIdNotFoundError as e:
+        return JSONResponse(status_code=401, content={"message": "Token not found"})
+    except SessionVerificationError as e:
+        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+    except SessionExpiredError as e:
+        return JSONResponse(status_code=440, content={"message": "Session expired"})
+    except UserNotFoundError as e:
+        return JSONResponse(status_code=404, content={"message": "User not found"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": "Book find failed"})
+    finally:
+        db.close()
 
 #책은 활성화 비활성화 모두를 반환하지만 거기서 사용하는 몫은 프론트에게 전가
 #예외는 활성화책 비활성화책 목록 반환하는 엔드포인트만 냅두면 됌
