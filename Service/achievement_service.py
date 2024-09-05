@@ -85,25 +85,53 @@ class achievement_service:
         return book_progress
 
     def get_all_progress(start_date: date, end_date: date, user_id: str, db):
-        results = db.query(result).filter(
+        results_between = db.query(result).filter(
             result.date >= start_date,
             result.date <= end_date,
             result.user_id == user_id
         ).all()
-        progress_by_book = {}
-        for res in results:
-            if res.book_id not in progress_by_book:
-                progress_by_book[res.book_id] = set()
-            progress_by_book[res.book_id].update(res.page)
-        book_progress = {}
+
+        results_before = db.query(result).filter(
+            result.date < start_date,
+            result.user_id == user_id
+        ).all()
+
+        progress_by_book_between = {}
+        progress_by_book_before = {}
+
+        for res in results_between:
+            if res.book_id not in progress_by_book_between:
+                progress_by_book_between[res.book_id] = set()
+            progress_by_book_between[res.book_id].update(res.page)
+
+        for res in results_before:
+            if res.book_id not in progress_by_book_before:
+                progress_by_book_before[res.book_id] = set()
+            progress_by_book_before[res.book_id].update(res.page)
+
+        book_progress_between = {}
+        book_progress_before = {}
         all_books = db.query(book).all()
+
         for book_ in all_books:
             book_id = book_.id
-            if book_id in progress_by_book:
-                pages = progress_by_book[book_id]
-                total_page = book_.end_page - book_.start_page + 1
-                progress = len(pages) * 100 / total_page
-                book_progress[book_id] = round(progress, 3)
+            total_page = book_.end_page - book_.start_page + 1
+
+            if book_id in progress_by_book_between:
+                pages_between = progress_by_book_between[book_id]
+                progress_between = len(pages_between) * 100 / total_page
+                book_progress_between[book_id] = round(progress_between, 3)
             else:
-                book_progress[book_id] = 0.0
-        return book_progress
+                book_progress_between[book_id] = 0.0
+
+            if book_id in progress_by_book_before:
+                pages_before = progress_by_book_before[book_id]
+                progress_before = len(pages_before) * 100 / total_page
+                book_progress_before[book_id] = round(progress_before, 3)
+            else:
+                book_progress_before[book_id] = 0.0
+
+        return {
+            "progress_before": book_progress_before,
+            "progress_between": book_progress_between
+        }

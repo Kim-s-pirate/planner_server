@@ -139,7 +139,7 @@ async def all_achievement(request: Request, start_date: date, end_date: date):
     db = get_db()
     try:
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        progress = achievement_service.get_all_progress(start_date, requester_id, requester_id, db)
+        progress = achievement_service.get_all_progress(start_date, end_date, requester_id, db)
         return JSONResponse(status_code=200, content={"message": progress})
     except SessionIdNotFoundError as e:
         return JSONResponse(status_code=401, content={"message": "Token not found"})
