@@ -25,8 +25,11 @@ async def schedule_create(request: Request, schedule_data: day_schedule_register
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
-        schedule_data = calendar_service.to_schedule_db(schedule_data, requester_id)
-        calendar_service.create_schedule(schedule_data, db)
+        if schedule_data.task_list is None:
+            calendar_service.delete_schedule_by_date(schedule_data.date, requester_id, db)
+        else:
+            schedule_data = calendar_service.to_schedule_db(schedule_data, requester_id)
+            calendar_service.create_schedule(schedule_data, db)
         return JSONResponse(status_code=201, content={"message": "Schedule registered successfully"})
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
@@ -153,7 +156,6 @@ async def get_month_schedule(request: Request, year: str, month: str):
 #     finally:
 #         db.close()
 
-#create에서 추가, 삭제, 생성을 모두 하는 식으로 변경
 @router.post("/register/goal")
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     db = get_db()
@@ -162,11 +164,10 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
         db.execute(text("SAVEPOINT savepoint"))
         session = AuthorizationService.verify_session(request, db)
         user_id = session['id']
-        if goal_data.goal == None:
+        if goal_data.goal is None:
             calendar_service.delete_goal(goal_data.year, goal_data.month, user_id, db)
         else:
             calendar_service.register_goal(goal_data, user_id, db)
-        db.commit()
         return JSONResponse(status_code=201, content={"message": "Goal registered successfully"})
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
