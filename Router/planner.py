@@ -14,7 +14,6 @@ router = APIRouter()
 # 교재 진도사항의 변경점을 확인하고 다시 돌려주는 코드가 필요함.
 
 # 삭제를 어떻게 해야하는지
-# 빈 데이터가 들어오면 값을 비교하지 말고 삭제를 한 후 넘어가는 식으로 코드를 작성 -> register에서 해결
 #-> 현재 플래너 등록에 문제가 있어서 swagger가 작동하지 않는 문제 발생
 # 주석 처리했음.
 # @router.post("/register/planner")
@@ -23,12 +22,12 @@ router = APIRouter()
 #         db = get_db()
 #         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
 #         db.execute(text("SAVEPOINT savepoint"))
-#         session = AuthorizationService.verify_session(request, db)
-#         user_id = session['id']
-#         planner_data = planner_service.verify_planner(planner_data, user_id, db)
-#         planner_service.register_planner(user_id, planner_data, db)
+#         requester_id = AuthorizationService.verify_session(request, db)["id"]
+#         planner_data = planner_service.verify_planner(planner_data, requester_id, db)
+#         planner_service.register_planner(requester_id, planner_data, db)
 #         db.commit()
-#         return JSONResponse(status_code=201, content={"message": "planner registered successfully"})
+#         new_progress = achievement_service.get_progress_before_date(planner_data.date, requester_id, db)
+#         return JSONResponse(status_code=201, content={"message": new_progress})
 #     except Exception as e:
 #         rollback_to_savepoint(db)
 #         return JSONResponse(status_code=500, content={"message": str(e)})
