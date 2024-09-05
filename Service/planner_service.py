@@ -75,53 +75,69 @@ class planner_service:
     def register_planner(user_id: str, planner_data: planner_register, db):
         #검증할때 시간이 넘어섰는지, 겹치는지 확인, 페이지가 책의 페이지보다 작거나 이상한지 확인
         date = planner_data.date
+
         to_do_list = planner_data.to_do_list
-        to_do_entity_list = planner_service.find_to_do_by_date(date, user_id, db)
-        to_do_entity_list = [planner_service.to_to_do_data(to_do_entity) for to_do_entity in to_do_entity_list]
-        exist_to_do = set(to_do_entity_list)
-        to_do_data_set = set(to_do_list)
-        to_delete_to_do = exist_to_do - to_do_data_set
-        to_add_to_do = to_do_data_set - exist_to_do
-        for to_do_data in to_delete_to_do:
-            data = planner_service.find_to_do_by_data(to_do_data, user_id, db)
+        if to_do_list is not None:
+            to_do_entity_list = planner_service.find_to_do_by_date(date, user_id, db)
+            to_do_entity_list = [planner_service.to_to_do_data(to_do_entity) for to_do_entity in to_do_entity_list]
+            exist_to_do = set(to_do_entity_list)
+            to_do_data_set = set(to_do_list)
+            to_delete_to_do = exist_to_do - to_do_data_set
+            to_add_to_do = to_do_data_set - exist_to_do
+            for to_do_data in to_delete_to_do:
+                data = planner_service.find_to_do_by_data(to_do_data, user_id, db)
+                db.delete(data)
+            db.commit()
+            for to_do_data in to_add_to_do:
+                to_do = planner_service.to_to_do_db(to_do_data, user_id, db)
+                db.add(to_do)
+            db.commit()
+        else:
+            data = planner_service.find_to_do_by_date(date, user_id, db)
             db.delete(data)
-        db.commit()
-        for to_do_data in to_add_to_do:
-            to_do = planner_service.to_to_do_db(to_do_data, user_id, db)
-            db.add(to_do)
-        db.commit()
+            db.commit()
 
         time_table_list = planner_data.time_table_list
-        time_table_entity_list = planner_service.find_time_table_by_date(date, user_id, db)
-        time_table_entity_list = [planner_service.to_time_table_data(time_table_entity) for time_table_entity in time_table_entity_list]
-        exist_time_table = set(time_table_entity_list)
-        time_table_data_set = set(time_table_list)
-        to_delete_time_table = exist_time_table - time_table_data_set
-        to_add_time_table = time_table_data_set - exist_time_table
-        for time_table_data in to_delete_time_table:
-            data = planner_service.find_time_table_by_data(time_table_data, user_id, db)
+        if time_table_list is not None:
+            time_table_entity_list = planner_service.find_time_table_by_date(date, user_id, db)
+            time_table_entity_list = [planner_service.to_time_table_data(time_table_entity) for time_table_entity in time_table_entity_list]
+            exist_time_table = set(time_table_entity_list)
+            time_table_data_set = set(time_table_list)
+            to_delete_time_table = exist_time_table - time_table_data_set
+            to_add_time_table = time_table_data_set - exist_time_table
+            for time_table_data in to_delete_time_table:
+                data = planner_service.find_time_table_by_data(time_table_data, user_id, db)
+                db.delete(data)
+            db.commit()
+            for time_table_data in to_add_time_table:
+                time_table = planner_service.to_time_table_db(time_table_data, user_id, db)
+                db.add(time_table)
+            db.commit()
+        else:
+            data = planner_service.find_time_table_by_date(date, user_id, db)
             db.delete(data)
-        db.commit()
-        for time_table_data in to_add_time_table:
-            time_table = planner_service.to_time_table_db(time_table_data, user_id, db)
-            db.add(time_table)
-        db.commit()
+            db.commit()
 
         result_list = planner_data.result_list
-        result_entity_list = planner_service.find_result_by_date(date, user_id, db)
-        result_entity_list = [planner_service.to_result_data(result_entity) for result_entity in result_entity_list]
-        exist_result = set(result_entity_list)
-        result_data_set = set(result_list)
-        to_delete_result = exist_result - result_data_set
-        to_add_result = result_data_set - exist_result
-        for result_data in to_delete_result:
-            data = planner_service.find_result_by_data(result_data, user_id, db)
+        if result_list is not None:
+            result_entity_list = planner_service.find_result_by_date(date, user_id, db)
+            result_entity_list = [planner_service.to_result_data(result_entity) for result_entity in result_entity_list]
+            exist_result = set(result_entity_list)
+            result_data_set = set(result_list)
+            to_delete_result = exist_result - result_data_set
+            to_add_result = result_data_set - exist_result
+            for result_data in to_delete_result:
+                data = planner_service.find_result_by_data(result_data, user_id, db)
+                db.delete(data)
+            db.commit()
+            for result_data in to_add_result:
+                result = planner_service.to_result_db(result_data, user_id, db)
+                db.add(result)
+            db.commit()
+        else:
+            data = planner_service.find_result_by_date(date, user_id, db)
             db.delete(data)
-        db.commit()
-        for result_data in to_add_result:
-            result = planner_service.to_result_db(result_data, user_id, db)
-            db.add(result)
-        db.commit()
+            db.commit()
 
 
     def find_result_by_data(result_data: result_register, user_id: str, db):
