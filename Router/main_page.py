@@ -8,9 +8,9 @@ from Service.user_service import *
 from Service.log_service import *
 from starlette.status import *
 from Service.authorization_service import *
-router = APIRouter()
+router = APIRouter(tags=["test"], prefix="/test")
     
-@router.get("/")
+@router.get("/", summary="테스트", description="테스트")
 async def main(request: Request):
     try:
         db = get_db()

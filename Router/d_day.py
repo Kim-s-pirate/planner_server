@@ -16,9 +16,12 @@ from dotenv import load_dotenv
 
 from Service.d_day_service import *
 
-router = APIRouter()
+router = APIRouter(tags=["d_day"], prefix="/d_day")
 
-@router.post("/d_day/create")
+@router.post("/create",
+             summary="디데이 생성",
+             description="디데이를 생성한다.",
+)
 async def create_d_day(request: Request, d_day_data: d_day_register):
     try:
         db = get_db()
@@ -35,8 +38,11 @@ async def create_d_day(request: Request, d_day_data: d_day_register):
     finally:
         db.close()
 
-@router.delete("/d_day/{id}")
-async def delete_d_day(request: Request, id: str, star: bool = Query(None)):
+@router.post("/edit/{id}",
+             summary="디데이 수정",
+             description="해당 id를 가진 디데이를 수정한다.",
+)
+async def edit_d_day(request: Request, id: str, star: bool = Query(None)):
     try:
         db = get_db()
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -54,7 +60,10 @@ async def delete_d_day(request: Request, id: str, star: bool = Query(None)):
     finally:
         db.close()
 
-@router.get("/d_day/list")
+@router.get("/list",
+             summary="디데이 리스트 반환",
+             description="사용자의 디데이 리스트를 반환한다.",
+)
 async def get_d_day_list(request: Request):
     try:
         db = get_db()
@@ -68,7 +77,10 @@ async def get_d_day_list(request: Request):
     finally:
         db.close()
 
-@router.delete("/d_day/{id}")
+@router.delete("/delete/{id}",
+             summary="디데이 삭제",
+             description="해당하는 id를 가진 디데이를 삭제한다.",
+)
 async def delete_d_day(request: Request, id: str):
     try:
         db = get_db()

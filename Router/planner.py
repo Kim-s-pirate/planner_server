@@ -8,7 +8,7 @@ from fastapi import Query, Request
 from Service.authorization_service import *
 from Data.planner import *
 
-router = APIRouter()
+router = APIRouter(tags=["planner"], prefix="/planner")
 
 # 성과를 계산하는 코드를 병합
 # 교재 진도사항의 변경점을 확인하고 다시 돌려주는 코드가 필요함.
@@ -35,7 +35,7 @@ router = APIRouter()
 #         db.close()
 
 #성과를 보여주는 코드 병합
-@router.get("/planner/{date}")
+@router.get("/{date}", summary="플래너 조회", description="해당 날짜의 플래너를 조회한다.")
 async def get_planner(request: Request, date: date):
     try:
         db = get_db()

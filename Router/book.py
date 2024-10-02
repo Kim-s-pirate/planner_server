@@ -12,9 +12,9 @@ from Data.book import *
 from Service.book_service import *
 from collections import defaultdict
 
-router = APIRouter()
+router = APIRouter(tags=["book"], prefix="/book")
 
-@router.post("/book/register")
+@router.post("/register", summary="책 등록", description="책을 등록합니다.")
 async def book_register(request: Request, book_data: book_register):
     db = get_db()
     try:
@@ -54,7 +54,7 @@ async def book_register(request: Request, book_data: book_register):
     finally:
         db.close()
 
-@router.get("/book/check_title_available")
+@router.get("/check_title_available", summary="책 제목 중복 확인", description="책 제목이 중복되는지 확인합니다.")
 async def check_title_available(request: Request, title: str):
     db = get_db()
     try:
@@ -75,7 +75,7 @@ async def check_title_available(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/book/id/{id}")
+@router.get("/id/{id}", summary="책 id 조회", description="책을 id를 통해서 조회합니다.")
 async def get_book_by_id(request: Request, id: str):
     db = get_db()
     try:
@@ -115,37 +115,7 @@ async def get_book_by_id(request: Request, id: str):
     finally:
         db.close()
 
-#굳이 존재할 필요가 없을 듯
-@router.get("/book/book_subject/{id}")
-async def get_book_subject(request: Request, id: str):
-    db = get_db()
-    try:
-        requester_id = AuthorizationService.verify_session(request, db)["id"]
-        found_book = book_service.find_book_by_id(id, db)
-        if not found_book:
-            raise UnauthorizedError
-        AuthorizationService.check_authorization(requester_id, found_book.user_id)
-        book_subject = subject_service.find_subject_by_id(found_book.subject_id, db)
-        if not book_subject:
-            found_subject = None
-        else:
-            found_subject = subject_service.to_subject_data(book_subject).__dict__
-            del found_subject['user_id']
-        return JSONResponse(status_code=200, content={"message": found_subject})
-    except SessionIdNotFoundError as e:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError as e:
-        return JSONResponse(status_code=440, content={"message": "Session expired"})
-    except UnauthorizedError as e:
-        return JSONResponse(status_code=403, content={"message": "You are not authorized to view this book"})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": "Book find failed"})
-    finally:
-        db.close()
-
-@router.get("/book/book_list")
+@router.get("/list", summary="책 목록 조회", description="책 목록을 조회합니다.")
 async def get_book_list(request: Request):
     db = get_db()
     try:
@@ -185,7 +155,7 @@ async def get_book_list(request: Request):
     finally:
         db.close()
 
-@router.get("/book/book_list_by_subject")
+@router.get("/list_by_subject", summary="과목별 책 목록 조회", description="과목별로 나누어 책 목록을 조회합니다.")
 async def get_book_list_by_subject(request: Request):
     db = get_db()
     try:
@@ -235,7 +205,7 @@ async def get_book_list_by_subject(request: Request):
 #책은 활성화 비활성화 모두를 반환하지만 거기서 사용하는 몫은 프론트에게 전가
 #예외는 활성화책 비활성화책 목록 반환하는 엔드포인트만 냅두면 됌
 
-@router.get("/book/book_list/{subject_id}")
+@router.get("list/{subject_id}", summary="과목 책 조회", description="해당 과목에 속하는 책 목록을 조회합니다.")
 async def book_list_by_subject(request: Request, subject_id: str):
     db = get_db()
     try:
@@ -274,7 +244,7 @@ async def book_list_by_subject(request: Request, subject_id: str):
     finally:
         db.close()
 
-@router.get("/book/book_list/status/{status}")
+@router.get("/list/status/{status}", summary="책 상태별 조회", description="활성화/비활성화된 책 목록을 조회합니다.")
 async def book_list_by_status(request: Request, status: bool):
     db = get_db()
     try:
@@ -312,7 +282,7 @@ async def book_list_by_status(request: Request, status: bool):
 
 # 통합 검색 기능
 # 알고리즘 최적화
-@router.get("/search/book/{keyword}")
+@router.get("/search/{keyword}", summary="책 검색", description="키워드로 책을 검색합니다.")
 async def book_search(request: Request, keyword: str):
     db = get_db()
     try:
@@ -360,7 +330,7 @@ async def book_search(request: Request, keyword: str):
         db.close()
 
 #전체 edit은 디자인 보고 채용 여부 결정
-@router.post("/edit/book_title/{id}")
+@router.post("/edit/title/{id}", summary="책 제목 수정", description="책 제목을 수정합니다.")
 async def edit_title(request: Request, book_data: book_title, id: str):
     db = get_db()
     try:
@@ -400,7 +370,7 @@ async def edit_title(request: Request, book_data: book_title, id: str):
     finally:
         db.close()
 
-@router.post("/edit/book_subject_id/{id}")
+@router.post("/edit/subject_id/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.")
 async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
     db = get_db()
     try:
@@ -437,7 +407,7 @@ async def edit_subject_id(request: Request, book_data: book_subject_id, id: str)
     finally:
         db.close()
 
-@router.post("/edit/book_page/{id}")
+@router.post("/edit/page/{id}", summary="책 페이지 수정", description="책 페이지를 수정합니다.")
 async def edit_page(request: Request, book_data: book_page, id: str):
     db = get_db()
     try:
@@ -477,7 +447,7 @@ async def edit_page(request: Request, book_data: book_page, id: str):
     finally:
         db.close()
 
-@router.post("/edit/book_memo/{id}")
+@router.post("/edit/memo/{id}", summary="책 메모 수정", description="책 메모를 수정합니다.")
 async def edit_memo(request: Request, book_data: book_memo, id: str):
     db = get_db()
     try:
@@ -511,7 +481,7 @@ async def edit_memo(request: Request, book_data: book_memo, id: str):
     finally:
         db.close()
 
-@router.post("/edit/book_status/{id}")
+@router.post("/edit/status/{id}", summary="책 상태 수정", description="책 상태를 수정합니다.")
 async def edit_status(request: Request, book_data: book_status, id: str):
     db = get_db()
     try:
@@ -545,7 +515,7 @@ async def edit_status(request: Request, book_data: book_status, id: str):
     finally:
         db.close()
 
-@router.delete("/delete/book/{id}")
+@router.delete("/delete/{id}", summary="책 id 삭제", description="책을 id로 삭제합니다.")
 async def delete_book(request: Request, id: str):
     db = get_db()
     try:
@@ -704,6 +674,7 @@ async def delete_book(request: Request, id: str):
 #     finally:
 #         db.close()
 
+# 에러 수정해서 넣기
 # @router.get("/subject_book_list")
 # async def subject_book_list(request: Request):
 #     db = get_db()

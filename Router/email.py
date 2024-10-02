@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader
 template_dir = os.path.join(os.path.dirname(__file__), "../Resource")
 env = Environment(loader=FileSystemLoader(template_dir))
-router = APIRouter()
+router = APIRouter(tags=["email"], prefix="/email")
 #This code test is done. It works well.
 # -> need to be make real email, app password
 
@@ -39,7 +39,7 @@ subject = 'Test Email'
 body = 'This is a test email sent using yagmail.'
 
 
-@router.post("/send_email/register")
+@router.post("/send_verification_email", summary="이메일 전송", description="회원가입 이메일 전송")
 async def send_email(request: Request, email: email_request):
     try:
         message = MIMEMultipart()
@@ -67,44 +67,8 @@ async def send_email(request: Request, email: email_request):
     except Exception as e:
         raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
-    #     body = templates.get_template("email_verification_form.html").render(request=request, verification_code=verification_code)
-    #     yag = yagmail.SMTP(user=gmail_user, password=gmail_password)
-    #     yag.send(
-    #         to=email,
-    #         subject=subject,
-    #         contents=body,
-    #     )
-    #     email_service.register_verification(email, verification_code, db)
-    #     return JSONResponse(status_code=200, content={"message": "Email sent successfully"})
-    # except Exception as e:
-    #     raise e
-    #     db.rollback()
-    #     return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
-    # finally:
-    #     db.commit()
 
-
-# async def send_email(to_email: str, subject: str, body: str):
-#     # 이메일 메시지 생성
-#     message = MIMEMultipart()
-#     message["From"] = SMTP_USER
-#     message["To"] = to_email
-#     message["Subject"] = subject
-#     message.attach(MIMEText(body, "plain"))
-
-#     # 이메일 전송
-#     await send(
-#         message,
-#         hostname=SMTP_SERVER,
-#         port=SMTP_PORT,
-#         start_tls=True,
-#         username=SMTP_USER,
-#         password=SMTP_PASSWORD
-#     )
-    
-#     return {"message": "Email sent successfully!"}
-
-@router.post("/verification_code")
+@router.post("/verify/code", summary="이메일 인증번호 인증", description="회원가입 이메일 인증번호 인증")
 async def verification_code(verify: email_verification):
     try:
         db = get_db()
