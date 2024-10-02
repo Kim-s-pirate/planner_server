@@ -19,7 +19,7 @@ from starlette.config import Config
 import urllib.parse
 import requests
 
-router = APIRouter()
+router = APIRouter(tags=["account"], prefix="/account")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
@@ -45,7 +45,7 @@ oauth_google = OAuth2Session(
 
 oauth_naver = OAuth2Session(NAVER_CLIENT_ID, redirect_uri=NAVER_AUTHORIZATION_URI)
 
-@router.post("/account/login")
+@router.post("/login", summary="유저 로그인", description="일반 유저 로그인")
 async def login(request: Request, user_data: user_login):
     db = get_db()
     try:
@@ -74,7 +74,7 @@ async def login(request: Request, user_data: user_login):
     finally:
         db.close()
 
-@router.get("/account/logout")
+@router.get("/logout", summary="유저 로그아웃", description="유저 로그아웃")
 async def logout(request: Request):
     db = get_db()
     try:
@@ -93,14 +93,14 @@ async def logout(request: Request):
         db.close()
 
 # OAuth2
-@router.get('/account/oauth2/login')
+@router.get('/oauth2/login', summary="OAuth2 로그인", description="OAuth2 로그인")
 async def login(request: Request):
     # state = secrets.token_urlsafe(16)
     # request.session['state'] = state
     authorization_url, _ = oauth_google.create_authorization_url(GOOGLE_AUTHORIZATION_URL)
     return RedirectResponse(authorization_url)
 
-@router.get('/account/login/oauth/google')
+@router.get('/login/oauth/google', summary="구글 로그인", description="""구글 로그인. OAuth2 인증 코드를 받아서 사용자 정보를 가져옴.""")
 async def auth(request: Request):
     try:
         # Exchange authorization code for access token
@@ -123,7 +123,7 @@ async def auth(request: Request):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
     
-@router.get("/account/oauth2/naver/get_state")
+@router.get("/oauth2/naver/get_state", summary="네이버 Oauth2 state 값 생성", description="네이버 로그인. state 값을 받아서 쿠키에 저장함.")
 async def get_state(request: Request):
     try:
         state = secrets.token_urlsafe(16)
@@ -135,26 +135,7 @@ async def get_state(request: Request):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-@router.get('/account/oauth2/naver/login')
-async def naver_login(request: Request):
-    try:
-        state = secrets.token_urlsafe(16)
-        request.session['state'] = state
-        authorization_url = (
-            NAVER_AUTHORIZATION_URI
-            + "?response_type=code&client_id="
-            + NAVER_CLIENT_ID
-            + "&redirect_uri="
-            + urllib.parse.quote(NAVER_REDIRECT_URI)
-            + "&state="
-            + urllib.parse.quote(state)
-        )
-        # state 값을 세션에 저장하거나 다른 방법으로 관리할 수 있습니다.
-        return RedirectResponse(authorization_url)
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": str(e)})
-
-@router.post('/account/login/oauth/naver')
+@router.post('/login/oauth/naver', summary="네이버 로그인", description="네이버 로그인. OAuth2 인증 코드를 받아서 사용자 정보를 가져옴.")
 async def auth(request: Request, naver_data: naver_data):
     try:
         code = naver_data.code
@@ -188,7 +169,7 @@ async def auth(request: Request, naver_data: naver_data):
         return JSONResponse(status_code=500, content={"message": str(e)})
     
 
-@router.post("/account/sound_setting")
+@router.post("/sound_setting", summary="사운드 설정", description="사운드 설정 변경")
 async def sound_setting(request: Request, sound_setting: int):
     db = get_db()
     try:

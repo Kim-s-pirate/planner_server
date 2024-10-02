@@ -12,13 +12,13 @@ from fastapi import Request
 from Data.book import *
 from Service.book_service import *
 
-router = APIRouter()
+router = APIRouter(tags=["achievement"], prefix="/achievement")
 
 load_dotenv("../.env")
 secret = os.getenv("secret")
 
 # 책 id 받아서 총 성취량 보여주는 코드.
-@router.get("/achievement/book_achievement/{book_id}")
+@router.get("/book_achievement/{book_id}", summary="책 id 총 성취도 조회", description="해당 책의 id로 총 성취도를 조회한다.")
 async def book_achievement(request: Request, book_id: str):
     db = get_db()
     try:
@@ -45,7 +45,7 @@ async def book_achievement(request: Request, book_id: str):
         db.close()
 
 # 날짜 두개랑 책 id 받아서 해당 책의 해당 기간동안의 성과 보여주는 코드.
-@router.get("/achievement/period_book_achievement/{book_id}")
+@router.get("/period_book_achievement/{book_id}", summary="책 id 기간별 성취도 조회", description="해당 책의 id로 기간별ㅊ 성취도를 조회한다.")
 async def period_book_achievement(request: Request, start_date: date, end_date: date, book_id: str):
     db = get_db()
     try:
@@ -72,7 +72,7 @@ async def period_book_achievement(request: Request, start_date: date, end_date: 
         db.close()
 
 # 날짜 두개 받아서 그 사이의 성과 보여주는 코드. 그 사이 여러 책이 들어갈 수 있음
-@router.get("/achievement/period_achievement")
+@router.get("/period_achievement", summary="여러 책 기간별 성취도 조회", description="여러 책의 기간별 성취도를 조회한다.")
 async def period_achievement(request: Request, start_date: date, end_date: date):
     db = get_db()
     try:
@@ -91,7 +91,7 @@ async def period_achievement(request: Request, start_date: date, end_date: date)
         db.close()
 
 # 날짜 하나와 책 id 받아서 그 날짜 이전까지의 해당 책의 진도율 보여주는 코드.
-@router.get("/achievement/book_last_achievement/{book_id}")
+@router.get("/book_last_achievement/{book_id}", summary="특정 책의 특정 날짜 이전까지의 성취도 반환", description="해당하는 id를 가진 책의 주어진 date 이전까지의 성취도를 반환한다.")
 async def book_last_achievement(request: Request, last_date: date, book_id: str):
     db = get_db()
     try:
@@ -116,7 +116,10 @@ async def book_last_achievement(request: Request, last_date: date, book_id: str)
         db.close()
 
 # 날짜 하나 받아서 그 날짜 이전까지의 진도율 보여주는 코드.
-@router.get("/achievement/last_achievement")
+@router.get("/last_achievement",
+             summary="특정 날짜 이전까지의 성취율 반환",
+             description="주어진 date 이전까지의 성취도를 반환한다.",
+)
 async def last_achievement(request: Request, last_date: date):
     db = get_db()
     try:
@@ -134,7 +137,10 @@ async def last_achievement(request: Request, last_date: date):
     finally:
         db.close()
 
-@router.get("/achievement/all_achievement")
+@router.get("/all_achievement",
+             summary="모든 성취도 반환",
+             description="사용자의 모든 성취도를 반환한다.",
+)
 async def all_achievement(request: Request, start_date: date, end_date: date):
     db = get_db()
     try:
