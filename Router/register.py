@@ -13,9 +13,12 @@ from fastapi import Query, Request
 from Service.authorization_service import *
 from Data.oauth import *
 
-router = APIRouter()
+router = APIRouter(tags=["account"], prefix="/account")
 
-@router.post("/account/register")
+@router.post("/register",
+             summary="회원가입",
+             description="회원정보와 state를 통해 회원가입한다.",
+)
 async def register(user_data: user_register):
     db = get_db()
     try:
@@ -75,7 +78,10 @@ async def register(user_data: user_register):
     finally:
         db.close()
 
-@router.get("/account/check_userid_available")
+@router.get("/check_userid_available",
+             summary="userid 중복 확인",
+             description="userid가 이미 존재하는지 확인한다.",
+)
 async def check_userid_available(userid: str):
     db = get_db()
     try:
@@ -89,7 +95,10 @@ async def check_userid_available(userid: str):
     finally:
         db.close()
 
-@router.get("/account/check_email_available")
+@router.get("/check_email_available",
+             summary="email 중복 확인",
+             description="email이 이미 존재하는지 확인한다.",
+)
 async def check_email_available(email: str):
     db = get_db()
     try:
@@ -103,8 +112,11 @@ async def check_email_available(email: str):
     finally:
         db.close()
 
-@router.post("/edit/user/userid/{id}")
-async def edit_user_userid(request: Request, user_data: user_userid, id: str):
+@router.post("/edit/userid/{id}",
+             summary="userid 수정",
+             description="userid를 주어진 정보로 수정한다.",
+)
+async def edit_userid(request: Request, user_data: user_userid, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -179,8 +191,11 @@ async def edit_user_userid(request: Request, user_data: user_userid, id: str):
 #     finally:
 #         db.close()
 
-@router.post("/edit/user/username/{id}")
-async def edit_user_username(request: Request, user_data: user_username, id: str):
+@router.post("/edit/username/{id}",
+             summary="username 수정",
+             description="username을 주어진 정보로 수정한다.",
+)
+async def edit_username(request: Request, user_data: user_username, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -215,8 +230,11 @@ async def edit_user_username(request: Request, user_data: user_username, id: str
 
 #username과 id를 동시에 수정하는 코드 작성 바람
 
-@router.post("/edit/user/password/{id}")
-async def edit_user_password(request: Request, user_data: user_password, id: str):
+@router.post("/edit/password/{id}",
+             summary="password 수정",
+             description="password를 주어진 정보로 수정한다.",
+)
+async def edit_password(request: Request, user_data: user_password, id: str):
     db = get_db()
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
@@ -250,7 +268,10 @@ async def edit_user_password(request: Request, user_data: user_password, id: str
         db.close()
 
 # 서버에서 사용하는 유저 삭제와 회원 탈퇴를 분리해야 함
-@router.delete("/delete/user/{id}")
+@router.delete("/delete/{id}",
+             summary="user 삭제",
+             description="주어진 id를 가진 user를 삭제한다.",
+)
 async def delete_user(request: Request, id: str):
     db = get_db()
     try:
@@ -291,9 +312,6 @@ async def delete_user(request: Request, id: str):
 #         username=oauth_user_data.username
 #         user_service.register_oauth_form_validation(oauth_user_data)
 #         user_service.register_oauth_user(naver_data, oauth_user_data, db)
-
-
-
 
 # @router.delete("/user_delete/{user_id}")
 # async def user_delete_by_userid(request: Request, user_id: str):
