@@ -52,7 +52,8 @@ app.include_router(achievement.router)
 # CORS
 origins = [
     "http://localhost:5173",
-    "http://218.239.229.119:5173"  # 특정 도메인만 허용
+    "http://218.239.229.119:5173",
+    "http://116.32.151.9:5173"
 ]
 
 app.add_middleware(
@@ -68,3 +69,4 @@ if __name__ == "__main__":
     scheduler_thread.daemon = True
     scheduler_thread.start()
     uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True, ssl_keyfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\planner.key", ssl_certfile="C:\\Users\\gon13\\Desktop\\planner_server\\Controller\\planner.crt")
+    #uvicorn.run("main:app", host="0.0.0.0", port=1500, reload=True)

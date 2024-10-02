@@ -13,12 +13,6 @@ router = APIRouter()
 @router.get("/")
 async def main(request: Request):
     try:
-        db = get_db()
-
-        achievement = achievement_service.get_progress_by_book_id("b280e3bb281dfd3807ddfc2f354d084d7725532a80f6fd08e3aaaeb3b2840ea3", db)
-        print(achievement)
-        get_progress_by_book_id_list = achievement_service.get_progress_by_book_id_list(["b280e3bb281dfd3807ddfc2f354d084d7725532a80f6fd08e3aaaeb3b2840ea3", "ceefb127424123b00c130c986a0ae03f6dbdc0703a9e769b8ef9d0a18ded5733"], db)
-        print(get_progress_by_book_id_list)
         return JSONResponse(status_code=200, content={"message": "Nice to meet you!"})
     except Exception as e:
         print(e)

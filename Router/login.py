@@ -135,32 +135,16 @@ async def get_state(request: Request):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-@router.get('/account/oauth2/naver/login')
-async def naver_login(request: Request):
-    try:
-        state = secrets.token_urlsafe(16)
-        request.session['state'] = state
-        authorization_url = (
-            NAVER_AUTHORIZATION_URI
-            + "?response_type=code&client_id="
-            + NAVER_CLIENT_ID
-            + "&redirect_uri="
-            + urllib.parse.quote(NAVER_REDIRECT_URI)
-            + "&state="
-            + urllib.parse.quote(state)
-        )
-        # state 값을 세션에 저장하거나 다른 방법으로 관리할 수 있습니다.
-        return RedirectResponse(authorization_url)
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": str(e)})
-
 @router.post('/account/login/oauth/naver')
 async def auth(request: Request, naver_data: naver_data):
     try:
         code = naver_data.code
         state = naver_data.state
         cookie_state = request.cookies.get("state")
-
+        print(request.session.get("state"))
+        print(request.cookies)
+        print(state)
+        print(cookie_state)
         if state != cookie_state:
             return JSONResponse(status_code=401, content={"message": "Invalid state"})
         token = oauth_naver.fetch_token(
@@ -182,7 +166,7 @@ async def auth(request: Request, naver_data: naver_data):
         if user_service.find_user_by_email(user_data["response"]["email"], db):
             return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
         else:
-            return JSONResponse(status_code=404, content={"message": "User needs to register"})
+            return JSONResponse(status_code=404, content={"message": "User needs to register", "user_email": user_data["response"]["email"]})
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})

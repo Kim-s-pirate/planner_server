@@ -2,6 +2,7 @@ from Data.oauth import naver_data, oauth_register
 from Database.models import user
 from Data.user import *
 from Database.database import db
+from Service.calendar_service import *
 from Service.error import *
 
 class user_service:
@@ -35,8 +36,10 @@ class user_service:
                 raise UserAlreadyExistsError
             if user_service.is_email_exists(user.email, db):
                 raise UserAlreadyExistsError
+            calendar_service.create_calendar(user.id, db)
             db.add(user)
             db.commit()
+            #공휴일 등 일정을 추가하는 코드 추가 필요
         except Exception as e:
             raise e
 

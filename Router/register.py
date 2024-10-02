@@ -283,6 +283,8 @@ async def delete_user(request: Request, id: str):
     finally:
         db.close()
 
+#oauth를 통해서 회원가입하는 경우를 처리해야함.
+
 # @router.post("/account/oauth2/naver/register")
 # async def oauth_register(request: Request, naver_data: naver_data, oauth_user_data: oauth_register):
 #     db = get_db()
