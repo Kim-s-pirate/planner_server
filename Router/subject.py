@@ -14,9 +14,12 @@ from Service.authorization_service import *
 from Data.subject import *
 from Service.error import *
 
-router = APIRouter()
+router = APIRouter(tags=["subject"], prefix="/subject")
 
-@router.post("/subject/create")
+@router.post("/create",
+             summary="과목 생성",
+             description="새로운 과목을 생성한다.",
+)
 async def subject_create(request: Request, subject_data: subject_register):
     db = get_db()
     try:
@@ -50,7 +53,10 @@ async def subject_create(request: Request, subject_data: subject_register):
     finally:
         db.close()
 
-@router.get("/subject/check_title_available")
+@router.get("/check_title_available",
+             summary="title 중복 확인",
+             description="title이 이미 존재하는지 확인한다.",
+)
 async def check_title_available(request: Request, title: str):
     db = get_db()
     try:
@@ -71,7 +77,10 @@ async def check_title_available(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/subject/id/{id}")
+@router.get("/id/{id}",
+             summary="subject id 반환",
+             description="해당 subject의 id를 반환한다.",
+)
 async def get_subject_by_id(request: Request, id: str):
     db = get_db()
     try:
@@ -103,7 +112,10 @@ async def get_subject_by_id(request: Request, id: str):
 
 # 통합 검색 기능으로 리팩토링
 #검색 알고리즘 최적화 필요
-@router.get("/search/subject/{title}")
+@router.get("/search/{title}",
+             summary="과목 검색 기능",
+             description="과목의 제목, 부분제목, 초성, 과목 등으로 검색 가능한 서비스이다.",
+)
 async def get_subject_by_title(request: Request, title: str):
     db = get_db()
     try:
@@ -132,7 +144,10 @@ async def get_subject_by_title(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/subject/subject_list")
+@router.get("/subject_list",
+             summary="과목 리스트 반환",
+             description="해당 사용자의 과목 리스트를 반환한다.",
+)
 async def get_subject_list(request: Request):
     db = get_db()
     try:
@@ -162,7 +177,10 @@ async def get_subject_list(request: Request):
     finally:
         db.close()
 
-@router.get("/subject/subject_color/{id}")
+@router.get("/subject_color/{id}",
+             summary="과목 색상 반환",
+             description="해당 id의 과목의 색상을 반환한다.",
+)
 async def get_subject_color(request: Request, id: str):
     db = get_db()
     try:
@@ -185,7 +203,10 @@ async def get_subject_color(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/subject/remain_color")
+@router.get("/subject/remain_color",
+             summary="사용 가능 색상 반환",
+             description="현재 사용중인 과목 색상을 제외한 사용 가능한 과목 색상을 반환한다.",
+)
 async def remain_color(request: Request):
     db = get_db()
     try:
@@ -203,7 +224,10 @@ async def remain_color(request: Request):
     finally:
         db.close()
 
-@router.post("/edit/subject_title/{id}")
+@router.post("/edit/subject_title/{id}",
+             summary="과목 title 수정",
+             description="주어진 id의 과목 title을 수정한다.",
+)
 async def edit_title(request: Request, new_title: subject_title, id: str):
     db = get_db()
     try:
@@ -243,7 +267,10 @@ async def edit_title(request: Request, new_title: subject_title, id: str):
     finally:
         db.close()
 
-@router.post("/edit/subject_color/{id}")
+@router.post("/edit/subject_color/{id}",
+             summary="과목 색상 수정",
+             description="주어진 id의 과목의 색상을 수정한다.",
+)
 async def edit_color(request: Request, id: str, new_color: subject_color):
     db = get_db()
     try:
@@ -280,7 +307,10 @@ async def edit_color(request: Request, id: str, new_color: subject_color):
     finally:
         db.close()
 
-@router.delete("/delete/subject/{id}")
+@router.delete("/delete/{id}",
+             summary="과목 삭제",
+             description="주어진 id의 과목을 삭제한다.",
+)
 async def delete_subject_by_id(request: Request, id: str):
     db = get_db()
     try:

@@ -21,6 +21,13 @@ import atexit
 load_dotenv("../.env")
 secret = os.getenv("secret")
 
+# 스웨거 예시 표시
+SWAGGER_HEADERS = {
+    "title": "SWAGGER API REFERENCE",
+    "version": "1.0.0",
+    "description": "",}
+
+
 
 schedule.every(10).minutes.do(lambda: email_service.delete_expired_verification(db))
 
@@ -29,8 +36,21 @@ def run_scheduler():
         schedule.run_pending()
         time.sleep(1)
 
-app = FastAPI()
+# app = FastAPI()
 
+# 스웨거 예시 표시
+app = FastAPI(
+    swagger_ui_parameters={
+        "deepLinking": True,
+        "displayRequestDuration": True,
+        "docExpansion": "none",
+        "operationsSorter": "method",
+        "filter": True,
+        "tagsSorter": "alpha",
+        "syntaxHighlight.theme": "tomorrow-night",
+    },
+    **SWAGGER_HEADERS
+)
 
 
 app.add_middleware(
