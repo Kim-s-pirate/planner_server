@@ -9,7 +9,6 @@ from Service.user_service import *
 from Service.log_service import *
 from Service.calendar_service import *
 from starlette.status import *
-from jose import JWTError, jwt
 from datetime import datetime, timezone, timedelta
 from Service.authorization_service import *
 import os

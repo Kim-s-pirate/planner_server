@@ -1,7 +1,13 @@
 # database.py
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-TEMP_URL = "mysql+mysqlconnector://" + DB_USER + ":" + DB_PASSWORD + "@" + DB_HOST + ":3306/"
+from dotenv import load_dotenv
+import os
+load_dotenv("../.env")
+DB_HOST = os.getenv("db_host")
+DB_USER = os.getenv("db_user")
+DB_PASSWORD = os.getenv("db_password")
+TEMP_URL = "mysql+mysqlconnector://" + DB_USER + ":" + DB_PASSWORD + "@" + DB_HOST + ":3306"
 DATABASE_URL = "mysql+mysqlconnector://" + DB_USER + ":" + DB_PASSWORD + "@" + DB_HOST + ":3306/planner"
 temp_engine = create_engine(TEMP_URL)
 engine = create_engine(DATABASE_URL)
