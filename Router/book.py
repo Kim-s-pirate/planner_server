@@ -3,7 +3,6 @@ from sqlalchemy import text
 from Database.database import get_db, rollback_to_savepoint
 from fastapi import APIRouter
 from starlette.status import *
-from jose import JWTError, jwt
 from Service.authorization_service import *
 import os
 from dotenv import load_dotenv
