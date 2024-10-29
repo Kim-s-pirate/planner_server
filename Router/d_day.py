@@ -7,7 +7,6 @@ from Database.database import get_db, rollback_to_savepoint
 from Data.user import *
 from fastapi import APIRouter
 from starlette.status import *
-from jose import JWTError, jwt
 from datetime import datetime, timezone, timedelta
 from Service.authorization_service import *
 import os
