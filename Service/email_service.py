@@ -18,6 +18,7 @@ class email_service:
         found = email_service.find_verification_by_email(email, db)
         if found is not None:
             found.code = code
+            db.commit()
             return True
         db.add(email_service.to_verification_db(email, code))
         db.commit()
