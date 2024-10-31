@@ -46,7 +46,12 @@ oauth_google = OAuth2Session(
 
 oauth_naver = OAuth2Session(NAVER_CLIENT_ID, redirect_uri=NAVER_AUTHORIZATION_URI)
 
-@router.post("/login", summary="유저 로그인", description="일반 유저 로그인")
+@router.post("/login", summary="유저 로그인", description="일반 유저 로그인",responses={
+        200: {"description": "로그인 성공", "content": {"application/json": {"example": {"message": "User logged in successfully"}}}},
+        226: {"description": "이미 로그인 중", "content": {"application/json": {"example": {"message": "Already logged in"}}
+        404: {"description": "ID 또는 비밀번호가 일치하지 않음", "content": {"application/json": {"example": {"message": "ID or password does not match"}}}},
+        500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "User login failed"}}}}
+}
 async def login(request: Request, user_data: user_login):
     db = get_db()
     try:
@@ -75,7 +80,12 @@ async def login(request: Request, user_data: user_login):
     finally:
         db.close()
 
-@router.get("/logout", summary="유저 로그아웃", description="유저 로그아웃")
+@router.get("/logout", summary="유저 로그아웃", description="유저 로그아웃", responses={
+        200: {"description": "로그아웃 성공", "content": {"application/json": {"example": {"message": "User logged out successfully"}}}},
+        401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+        417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+        500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while logging out the user"}}}}
+})
 async def logout(request: Request):
     db = get_db()
     try:
