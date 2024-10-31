@@ -88,4 +88,4 @@ if __name__ == "__main__":
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
-    uvicorn.run("main:app", host="0.0.0.0", port=1500, workers=15)
+    uvicorn.run("main:app", host="0.0.0.0", port=1500, workers=2)
