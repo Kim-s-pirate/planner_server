@@ -20,6 +20,7 @@ import urllib.parse
 import requests
 
 router = APIRouter(tags=["account"], prefix="/account")
+load_dotenv(".env")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")

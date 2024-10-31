@@ -22,13 +22,12 @@ env = Environment(loader=FileSystemLoader(template_dir))
 router = APIRouter(tags=["email"], prefix="/email")
 #This code test is done. It works well.
 # -> need to be make real email, app password
-
+load_dotenv(".env")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USER = os.getenv("email")
 SMTP_PASSWORD = os.getenv("password")
 
-load_dotenv("../.env")
 email = os.getenv("email")
 password = os.getenv("password")
 gmail_user = email
