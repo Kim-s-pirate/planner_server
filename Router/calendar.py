@@ -17,10 +17,13 @@ from dotenv import load_dotenv
 
 router = APIRouter(tags=["calendar"], prefix="/calendar")
 
-@router.post("/create",
-             summary="캘린더 생성",
-             description="캘린더를 생성한다.",
-)
+@router.post("/create", summary="캘린더 생성", description="캘린더를 생성한다.", responses={
+    201: {"description": "성공", "content": {"application/json": {"example": {"message": "Schedule registered successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Schedule registration failed"}}}}
+})
 async def schedule_create(request: Request, schedule_data: day_schedule_register):
     db = get_db()
     try:
@@ -48,10 +51,14 @@ async def schedule_create(request: Request, schedule_data: day_schedule_register
     finally:
         db.close()
 
-@router.get("/day_schedule/{date}",
-             summary="하루 스케쥴 반환",
-             description="주어진 date의 스케쥴을 반환한다.",
-)
+@router.get("/day_schedule/{date}", summary="하루 스케쥴 반환", description="주어진 date의 스케쥴을 반환한다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Schedule data"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    404: {"description": "스케줄 없음", "content": {"application/json": {"example": {"message": "Schedule not found"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Schedule find failed"}}}}
+})
 async def get_day_schedule(request: Request, date: date):
     db = get_db()
     try:
@@ -77,10 +84,14 @@ async def get_day_schedule(request: Request, date: date):
         db.close()
 
 #month_schedule에는 일정과 월간, 주간 목표를 같이 보내줘야함
-@router.get("/month_schedule",
-             summary="달 스케쥴 반환",
-             description="주어진 달의 스케쥴을 반환한다.",
-)
+@router.get("/month_schedule", summary="달 스케쥴 반환", description="주어진 달의 스케쥴을 반환한다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Monthly schedule data"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    404: {"description": "스케줄 없음", "content": {"application/json": {"example": {"message": "Schedule not found"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Schedule find failed"}}}}
+})
 async def get_month_schedule(request: Request, year: str, month: str):
     db = get_db()
     try:
@@ -164,10 +175,13 @@ async def get_month_schedule(request: Request, year: str, month: str):
 #     finally:
 #         db.close()
 
-@router.post("/register/goal",
-             summary="목표 생성",
-             description="캘린더의 목표를 생성한다.",
-)
+@router.post("/register/goal", summary="목표 생성", description="캘린더의 목표를 생성한다.", responses={
+    201: {"description": "성공", "content": {"application/json": {"example": {"message": "Goal registered successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while registering the goal"}}}}
+})
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     db = get_db()
     try:
@@ -223,10 +237,13 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
 #     finally:
 #         db.close()
 
-@router.get("/calendar",
-             summary="캘린더 반환",
-             description="해당하는 달의 캘린더를 반환한다.",
-)
+@router.get("/calendar", summary="캘린더 반환", description="해당하는 달의 캘린더를 반환한다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"schedule": [{"id": "1", "name": "Sample Schedule"}], "goal": {"id": "1", "name": "Sample Goal"}}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while getting the calendar"}}}}
+})
 async def get_calendar(request: Request, year: int, month: int):
     db = get_db()
     try:
