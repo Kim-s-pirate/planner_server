@@ -15,9 +15,21 @@ from Data.oauth import *
 
 router = APIRouter(tags=["account"], prefix="/account")
 
-@router.post("/register",
-             summary="회원가입",
-             description="회원정보와 state를 통해 회원가입한다.",
+@router.post("/register",summary="회원가입",description="회원정보와 state를 통해 회원가입한다.",responses={
+    201: {"description": "회원가입 성공", "content": {"application/json": {"example": {"message": "User registered successfully"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Email cannot be blank"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Email cannot contain spaces"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Userid cannot be blank"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Userid cannot contain spaces"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Userid must be between 3 and 20 characters long"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Username cannot be blank"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Password cannot be blank"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Password cannot contain spaces"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Password must be between 3 and 20 characters long"}}}},
+    400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Invalid user data"}}}},
+    409: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "User already exists"}}}},
+    500: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "User registration failed"}}}},
+}
 )
 async def register(user_data: user_register):
     db = get_db()
@@ -78,10 +90,11 @@ async def register(user_data: user_register):
     finally:
         db.close()
 
-@router.get("/check_userid_available",
-             summary="userid 중복 확인",
-             description="userid가 이미 존재하는지 확인한다.",
-)
+@router.get("/check_userid_available",summary="userid 중복 확인",description="userid가 이미 존재하는지 확인한다.",responses={
+    200: {"description": "userid 중복 확인 성공", "content": {"application/json": {"example": {"message": "Userid is available"}}}},
+    409: {"description": "userid 중복 확인 실패", "content": {"application/json": {"example": {"message": "Userid already exists"}}}},
+    500: {"description": "userid 중복 확인 실패", "content": {"application/json": {"example": {"message": "User check failed"}}}},
+})
 async def check_userid_available(userid: str):
     db = get_db()
     try:
@@ -95,10 +108,11 @@ async def check_userid_available(userid: str):
     finally:
         db.close()
 
-@router.get("/check_email_available",
-             summary="email 중복 확인",
-             description="email이 이미 존재하는지 확인한다.",
-)
+@router.get("/check_email_available",summary="email 중복 확인",description="email이 이미 존재하는지 확인한다.",responses={
+    200: {"description": "email 중복 확인 성공", "content": {"application/json": {"example": {"message": "Email is available"}}}},
+    409: {"description": "email 중복 확인 실패", "content": {"application/json": {"example": {"message": "Email already exists"}}}},
+    500: {"description": "email 중복 확인 실패", "content": {"application/json": {"example": {"message": "User check failed"}}}},
+})
 async def check_email_available(email: str):
     db = get_db()
     try:
@@ -112,10 +126,17 @@ async def check_email_available(email: str):
     finally:
         db.close()
 
-@router.post("/edit/userid/{id}",
-             summary="userid 수정",
-             description="userid를 주어진 정보로 수정한다.",
-)
+@router.post("/edit/userid/{id}",summary="userid 수정",description="userid를 주어진 정보로 수정한다.",responses={
+    200: {"description": "userid 수정 성공", "content": {"application/json": {"example": {"message": "User edited successfully"}}}},
+    400: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "Userid cannot be empty"}}}},
+    401: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "You are not authorized to edit this user"}}}},
+    404: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    409: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "User already exists"}}}},
+    417: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "userid 수정 실패", "content": {"application/json": {"example": {"message": "User edit failed"}}}},
+})
 async def edit_userid(request: Request, user_data: user_userid, id: str):
     db = get_db()
     try:
@@ -191,10 +212,16 @@ async def edit_userid(request: Request, user_data: user_userid, id: str):
 #     finally:
 #         db.close()
 
-@router.post("/edit/username/{id}",
-             summary="username 수정",
-             description="username을 주어진 정보로 수정한다.",
-)
+@router.post("/edit/username/{id}",summary="username 수정",description="username을 주어진 정보로 수정한다.",responses={
+    200: {"description": "username 수정 성공", "content": {"application/json": {"example": {"message": "User edited successfully"}}}},
+    400: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "Username cannot be empty"}}}},
+    401: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "You are not authorized to edit this user"}}}},
+    404: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    417: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "username 수정 실패", "content": {"application/json": {"example": {"message": "User edit failed"}}}},
+})
 async def edit_username(request: Request, user_data: user_username, id: str):
     db = get_db()
     try:
@@ -230,10 +257,16 @@ async def edit_username(request: Request, user_data: user_username, id: str):
 
 #username과 id를 동시에 수정하는 코드 작성 바람
 
-@router.post("/edit/password/{id}",
-             summary="password 수정",
-             description="password를 주어진 정보로 수정한다.",
-)
+@router.post("/edit/password/{id}",summary="password 수정",description="password를 주어진 정보로 수정한다.",responses={
+    200: {"description": "password 수정 성공", "content": {"application/json": {"example": {"message": "User edited successfully"}}}},
+    400: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "Password cannot be empty"}}}},
+    401: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "You are not authorized to edit this user"}}}},
+    404: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    417: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "password 수정 실패", "content": {"application/json": {"example": {"message": "User edit failed"}}}},
+})
 async def edit_password(request: Request, user_data: user_password, id: str):
     db = get_db()
     try:
@@ -268,10 +301,15 @@ async def edit_password(request: Request, user_data: user_password, id: str):
         db.close()
 
 # 서버에서 사용하는 유저 삭제와 회원 탈퇴를 분리해야 함
-@router.delete("/delete/{id}",
-             summary="user 삭제",
-             description="주어진 id를 가진 user를 삭제한다.",
-)
+@router.delete("/delete/{id}",summary="user 삭제",description="주어진 id를 가진 user를 삭제한다.",responses={
+    200: {"description": "user 삭제 성공", "content": {"application/json": {"example": {"message": "User deleted successfully"}}}},
+    401: {"description": "user 삭제 실패", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "user 삭제 실패", "content": {"application/json": {"example": {"message": "You are not authorized to edit this user"}}}},
+    404: {"description": "user 삭제 실패", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    417: {"description": "user 삭제 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "user 삭제 실패", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "user 삭제 실패", "content": {"application/json": {"example": {"message": "User delete failed"}}}},
+})
 async def delete_user(request: Request, id: str):
     db = get_db()
     try:
