@@ -18,7 +18,7 @@ import threading
 import schedule
 import atexit
 
-load_dotenv("../.env")
+load_dotenv(".env")
 secret = os.getenv("secret")
 
 # 스웨거 예시 표시

@@ -14,7 +14,7 @@ from Service.book_service import *
 
 router = APIRouter(tags=["achievement"], prefix="/achievement")
 
-load_dotenv("../.env")
+load_dotenv(".env")
 secret = os.getenv("secret")
 
 # 책 id 받아서 총 성취량 보여주는 코드.
