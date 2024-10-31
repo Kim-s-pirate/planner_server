@@ -17,10 +17,10 @@ from Service.d_day_service import *
 
 router = APIRouter(tags=["d_day"], prefix="/d_day")
 
-@router.post("/create",
-             summary="디데이 생성",
-             description="디데이를 생성한다.",
-)
+@router.post("/create", summary="디데이 생성", description="디데이를 생성한다.", responses={
+    201: {"description": "성공", "content": {"application/json": {"example": {"message": "D-Day created successfully"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Error message"}}}}
+})
 async def create_d_day(request: Request, d_day_data: d_day_register):
     try:
         db = get_db()
@@ -37,10 +37,10 @@ async def create_d_day(request: Request, d_day_data: d_day_register):
     finally:
         db.close()
 
-@router.post("/edit/{id}",
-             summary="디데이 수정",
-             description="해당 id를 가진 디데이를 수정한다.",
-)
+@router.post("/edit/{id}", summary="디데이 수정", description="해당 id를 가진 디데이를 수정한다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "D-Day deleted successfully"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Error message"}}}}
+})
 async def edit_d_day(request: Request, id: str, star: bool = Query(None)):
     try:
         db = get_db()
@@ -59,10 +59,10 @@ async def edit_d_day(request: Request, id: str, star: bool = Query(None)):
     finally:
         db.close()
 
-@router.get("/list",
-             summary="디데이 리스트 반환",
-             description="사용자의 디데이 리스트를 반환한다.",
-)
+@router.get("/list", summary="디데이 리스트 반환", description="사용자의 디데이 리스트를 반환한다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": [{"id": "1", "name": "Sample D-Day"}]}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Error message"}}}}
+})
 async def get_d_day_list(request: Request):
     try:
         db = get_db()
@@ -76,10 +76,10 @@ async def get_d_day_list(request: Request):
     finally:
         db.close()
 
-@router.delete("/delete/{id}",
-             summary="디데이 삭제",
-             description="해당하는 id를 가진 디데이를 삭제한다.",
-)
+@router.delete("/delete/{id}", summary="디데이 삭제", description="해당하는 id를 가진 디데이를 삭제한다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "D-Day deleted successfully"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Error message"}}}}
+})
 async def delete_d_day(request: Request, id: str):
     try:
         db = get_db()
