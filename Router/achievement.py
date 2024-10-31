@@ -18,7 +18,15 @@ load_dotenv(".env")
 secret = os.getenv("secret")
 
 # 책 id 받아서 총 성취량 보여주는 코드.
-@router.get("/book_achievement/{book_id}", summary="책 id 총 성취도 조회", description="해당 책의 id로 총 성취도를 조회한다.")
+@router.get("/book_achievement/{book_id}", summary="책 id 총 성취도 조회", description="해당 책의 id로 총 성취도를 조회한다.", responses={
+    200: {"description": "성취도 조회 성공", "content": {"application/json": {"example": {"message": "achievement data"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "인증 실패", "content": {"application/json": {"example": {"message": "You are not authorized to view this book"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 오류", "content": {"application/json": {"example": {"message": "achievement get failed"}}}}
+})
 async def book_achievement(request: Request, book_id: str):
     db = get_db()
     try:
@@ -45,7 +53,15 @@ async def book_achievement(request: Request, book_id: str):
         db.close()
 
 # 날짜 두개랑 책 id 받아서 해당 책의 해당 기간동안의 성과 보여주는 코드.
-@router.get("/period_book_achievement/{book_id}", summary="책 id 기간별 성취도 조회", description="해당 책의 id로 기간별ㅊ 성취도를 조회한다.")
+@router.get("/period_book_achievement/{book_id}", summary="책 id 기간별 성취도 조회", description="해당 책의 id로 기간별 성취도를 조회한다.", responses={
+    200: {"description": "성취도 조회 성공", "content": {"application/json": {"example": {"message": "achievement data"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "인증 실패", "content": {"application/json": {"example": {"message": "You are not authorized to view this book"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 오류", "content": {"application/json": {"example": {"message": "achievement get failed"}}}}
+})
 async def period_book_achievement(request: Request, start_date: date, end_date: date, book_id: str):
     db = get_db()
     try:
@@ -72,7 +88,13 @@ async def period_book_achievement(request: Request, start_date: date, end_date: 
         db.close()
 
 # 날짜 두개 받아서 그 사이의 성과 보여주는 코드. 그 사이 여러 책이 들어갈 수 있음
-@router.get("/period_achievement", summary="여러 책 기간별 성취도 조회", description="여러 책의 기간별 성취도를 조회한다.")
+@router.get("/period_achievement", summary="여러 책 기간별 성취도 조회", description="여러 책의 기간별 성취도를 조회한다.", responses={
+    200: {"description": "성취도 조회 성공", "content": {"application/json": {"example": {"message": "achievement data"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 오류", "content": {"application/json": {"example": {"message": "achievement get failed"}}}}
+})
 async def period_achievement(request: Request, start_date: date, end_date: date):
     db = get_db()
     try:
@@ -91,7 +113,15 @@ async def period_achievement(request: Request, start_date: date, end_date: date)
         db.close()
 
 # 날짜 하나와 책 id 받아서 그 날짜 이전까지의 해당 책의 진도율 보여주는 코드.
-@router.get("/book_last_achievement/{book_id}", summary="특정 책의 특정 날짜 이전까지의 성취도 반환", description="해당하는 id를 가진 책의 주어진 date 이전까지의 성취도를 반환한다.")
+@router.get("/book_last_achievement/{book_id}", summary="특정 책의 특정 날짜 이전까지의 성취도 반환", description="해당하는 id를 가진 책의 주어진 date 이전까지의 성취도를 반환한다.", responses={
+    200: {"description": "성취도 조회 성공", "content": {"application/json": {"example": {"message": "achievement data"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    403: {"description": "인증 실패", "content": {"application/json": {"example": {"message": "You are not authorized to view this book"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 오류", "content": {"application/json": {"example": {"message": "achievement get failed"}}}}
+})
 async def book_last_achievement(request: Request, last_date: date, book_id: str):
     db = get_db()
     try:
@@ -116,10 +146,13 @@ async def book_last_achievement(request: Request, last_date: date, book_id: str)
         db.close()
 
 # 날짜 하나 받아서 그 날짜 이전까지의 진도율 보여주는 코드.
-@router.get("/last_achievement",
-             summary="특정 날짜 이전까지의 성취율 반환",
-             description="주어진 date 이전까지의 성취도를 반환한다.",
-)
+@router.get("/last_achievement", summary="특정 날짜 이전까지의 성취율 반환", description="주어진 date 이전까지의 성취도를 반환한다.", responses={
+    200: {"description": "성취도 조회 성공", "content": {"application/json": {"example": {"message": "achievement data"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 오류", "content": {"application/json": {"example": {"message": "achievement get failed"}}}}
+})
 async def last_achievement(request: Request, last_date: date):
     db = get_db()
     try:
@@ -137,10 +170,13 @@ async def last_achievement(request: Request, last_date: date):
     finally:
         db.close()
 
-@router.get("/all_achievement",
-             summary="모든 성취도 반환",
-             description="사용자의 모든 성취도를 반환한다.",
-)
+@router.get("/all_achievement", summary="모든 성취도 반환", description="사용자의 모든 성취도를 반환한다.", responses={
+    200: {"description": "성취도 조회 성공", "content": {"application/json": {"example": {"message": "achievement data"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    500: {"description": "서버 오류", "content": {"application/json": {"example": {"message": "achievement get failed"}}}}
+})
 async def all_achievement(request: Request, start_date: date, end_date: date):
     db = get_db()
     try:

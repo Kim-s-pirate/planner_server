@@ -38,7 +38,10 @@ subject = 'Test Email'
 body = 'This is a test email sent using yagmail.'
 
 
-@router.post("/send_verification_email", summary="이메일 전송", description="회원가입 이메일 전송")
+@router.post("/send_verification_email", summary="이메일 전송", description="회원가입 이메일 전송", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Email sent successfully!"}}}},
+    500: {"description": "이메일 전송 실패", "content": {"application/json": {"example": {"message": "There was some error while sending the email"}}}}
+})
 async def send_email(request: Request, email: email_request):
     try:
         message = MIMEMultipart()
@@ -67,7 +70,12 @@ async def send_email(request: Request, email: email_request):
         raise e
         return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
 
-@router.post("/verify/code", summary="이메일 인증번호 인증", description="회원가입 이메일 인증번호 인증")
+@router.post("/verify/code", summary="이메일 인증번호 인증", description="회원가입 이메일 인증번호 인증", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Verification code is correct", "state": "some_state"}}}},
+    400: {"description": "인증번호 오류", "content": {"application/json": {"example": {"message": "Verification code is incorrect"}}}},
+    404: {"description": "이메일 없음", "content": {"application/json": {"example": {"message": "Email not found"}}}},
+    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while verifying the code"}}}}
+})
 async def verification_code(verify: email_verification):
     try:
         db = get_db()

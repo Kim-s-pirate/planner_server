@@ -10,7 +10,7 @@ from starlette.status import *
 from Service.authorization_service import *
 router = APIRouter(tags=["test"], prefix="/test")
     
-@router.get("/", summary="테스트", description="테스트")
+@router.get("/", summary="테스트", description="테스트", response_description="테스트")
 async def main(request: Request):
     try:
         db = get_db()
