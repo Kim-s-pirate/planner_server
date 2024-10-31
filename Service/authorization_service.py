@@ -9,7 +9,7 @@ from Service.error import *
 
 # id
 
-load_dotenv("../.env")
+load_dotenv(".env")
 secret = os.getenv("secret")
 
 class AuthorizationService:
