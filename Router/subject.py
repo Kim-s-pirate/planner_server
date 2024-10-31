@@ -16,10 +16,16 @@ from Service.error import *
 
 router = APIRouter(tags=["subject"], prefix="/subject")
 
-@router.post("/create",
-             summary="과목 생성",
-             description="새로운 과목을 생성한다.",
-)
+@router.post("/create",summary="과목 생성",description="새로운 과목을 생성한다.",response={
+    201: {"description": "과목 생성 성공", "content": {"application/json": {"example": { "message": "Subject registered successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    409: {"description": "제목 공백", "content": {"application/json": {"example": { "message": "Title cannot be blank"}}}},
+    507: {"description": "색상 고갈", "content": {"application/json": {"example": { "message": "No more colors available in the color set"}}}},
+    409: {"description": "과목 중복", "content": {"application/json": {"example": { "message": "Subject already exists"}}}},
+    500: {"description": "과목 생성 실패", "content": {"application/json": {"example": { "message": "Subject registration failed"}}}},
+})
 async def subject_create(request: Request, subject_data: subject_register):
     db = get_db()
     try:
@@ -53,10 +59,14 @@ async def subject_create(request: Request, subject_data: subject_register):
     finally:
         db.close()
 
-@router.get("/check_title_available",
-             summary="title 중복 확인",
-             description="title이 이미 존재하는지 확인한다.",
-)
+@router.get("/check_title_available",summary="title 중복 확인",description="title이 이미 존재하는지 확인한다.",response={
+    200: {"description": "title 사용 가능", "content": {"application/json": {"example": { "message": "Title is available"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    409: {"description": "과목 중복", "content": {"application/json": {"example": { "message": "Subject already exists"}}}},
+    500: {"description": "title 중복 확인 실패", "content": {"application/json": {"example": { "message": "Subject check failed"}}}},
+})
 async def check_title_available(request: Request, title: str):
     db = get_db()
     try:
@@ -77,10 +87,14 @@ async def check_title_available(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/id/{id}",
-             summary="subject id 반환",
-             description="해당 subject의 id를 반환한다.",
-)
+@router.get("/id/{id}",summary="subject id 반환",description="해당 subject의 id를 반환한다.",response={
+    200: {"description": "subject id 반환 성공", "content": {"application/json": {"example": { "message": "Subject id returned successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to view this subject"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "subject id 반환 실패", "content": {"application/json": {"example": { "message": "Subject id return failed"}}}},
+})
 async def get_subject_by_id(request: Request, id: str):
     db = get_db()
     try:
@@ -112,10 +126,14 @@ async def get_subject_by_id(request: Request, id: str):
 
 # 통합 검색 기능으로 리팩토링
 #검색 알고리즘 최적화 필요
-@router.get("/search/{title}",
-             summary="과목 검색 기능",
-             description="과목의 제목, 부분제목, 초성, 과목 등으로 검색 가능한 서비스이다.",
-)
+@router.get("/search/{title}",summary="과목 검색 기능",description="과목의 제목, 부분제목, 초성, 과목 등으로 검색 가능한 서비스이다.",response={
+    200: {"description": "과목 검색 성공", "content": {"application/json": {"example": { "message": "Subject searched successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "과목 검색 실패", "content": {"application/json": {"example": { "message": "Subject search failed"}}}},
+})
 async def get_subject_by_title(request: Request, title: str):
     db = get_db()
     try:
@@ -144,10 +162,14 @@ async def get_subject_by_title(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/subject_list",
-             summary="과목 리스트 반환",
-             description="해당 사용자의 과목 리스트를 반환한다.",
-)
+@router.get("/subject_list",summary="과목 리스트 반환",description="해당 사용자의 과목 리스트를 반환한다.",response={
+    200: {"description": "과목 리스트 반환 성공", "content": {"application/json": {"example": { "message": "Subject list returned successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "과목 리스트 반환 실패", "content": {"application/json": {"example": { "message": "Subject find failed"}}}},
+})
 async def get_subject_list(request: Request):
     db = get_db()
     try:
@@ -177,10 +199,14 @@ async def get_subject_list(request: Request):
     finally:
         db.close()
 
-@router.get("/subject_color/{id}",
-             summary="과목 색상 반환",
-             description="해당 id의 과목의 색상을 반환한다.",
-)
+@router.get("/subject_color/{id}",summary="과목 색상 반환",description="해당 id의 과목의 색상을 반환한다.",response={
+    200: {"description": "과목 색상 반환 성공", "content": {"application/json": {"example": { "message": "Subject color returned successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to view this subject"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "과목 색상 반환 실패", "content": {"application/json": {"example": { "message": "Color find failed"}}}},
+})
 async def get_subject_color(request: Request, id: str):
     db = get_db()
     try:
@@ -203,10 +229,13 @@ async def get_subject_color(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/subject/remain_color",
-             summary="사용 가능 색상 반환",
-             description="현재 사용중인 과목 색상을 제외한 사용 가능한 과목 색상을 반환한다.",
-)
+@router.get("/subject/remain_color",summary="사용 가능 색상 반환",description="현재 사용중인 과목 색상을 제외한 사용 가능한 과목 색상을 반환한다.",response={
+    200: {"description": "사용 가능 색상 반환 성공", "content": {"application/json": {"example": { "message": "Remain color returned successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "사용 가능 색상 반환 실패", "content": {"application/json": {"example": { "message": "Color find failed"}}}},
+})
 async def remain_color(request: Request):
     db = get_db()
     try:
@@ -224,10 +253,17 @@ async def remain_color(request: Request):
     finally:
         db.close()
 
-@router.post("/edit/subject_title/{id}",
-             summary="과목 title 수정",
-             description="주어진 id의 과목 title을 수정한다.",
-)
+@router.post("/edit/subject_title/{id}",summary="과목 title 수정",description="주어진 id의 과목 title을 수정한다.",response={
+    200: {"description": "과목 title 수정 성공", "content": {"application/json": {"example": { "message": "Subject edited successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to edit this subject"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
+    409: {"description": "title 공백", "content": {"application/json": {"example": { "message": "Title cannot be blank"}}}},
+    409: {"description": "과목 중복", "content": {"application/json": {"example": { "message": "Subject already exists"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "과목 title 수정 실패", "content": {"application/json": {"example": { "message": "Subject edit failed"}}}},
+})
 async def edit_title(request: Request, new_title: subject_title, id: str):
     db = get_db()
     try:
@@ -267,10 +303,15 @@ async def edit_title(request: Request, new_title: subject_title, id: str):
     finally:
         db.close()
 
-@router.post("/edit/subject_color/{id}",
-             summary="과목 색상 수정",
-             description="주어진 id의 과목의 색상을 수정한다.",
-)
+@router.post("/edit/subject_color/{id}",summary="과목 색상 수정",description="주어진 id의 과목의 색상을 수정한다.",response={
+    200: {"description": "과목 색상 수정 성공", "content": {"application/json": {"example": { "message": "Subject edited successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to edit this subject"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
+    400: {"description": "색상 공백", "content": {"application/json": {"example": { "message": "Color cannot be blank"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "과목 색상 수정 실패", "content": {"application/json": {"example": { "message": "Subject edit failed"}}}},
+})
 async def edit_color(request: Request, id: str, new_color: subject_color):
     db = get_db()
     try:
@@ -307,9 +348,14 @@ async def edit_color(request: Request, id: str, new_color: subject_color):
     finally:
         db.close()
 
-@router.delete("/delete/{id}",
-             summary="과목 삭제",
-             description="주어진 id의 과목을 삭제한다.",
+@router.delete("/delete/{id}",summary="과목 삭제",description="주어진 id의 과목을 삭제한다.",response={
+    200: {"description": "과목 삭제 성공", "content": {"application/json": {"example": { "message": "Subject deleted successfully"}}}},
+    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to delete this subject"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+    500: {"description": "과목 삭제 실패", "content": {"application/json": {"example": { "message": "Subject delete failed"}}}},
 )
 async def delete_subject_by_id(request: Request, id: str):
     db = get_db()
