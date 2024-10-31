@@ -5,7 +5,7 @@
             "name": "FastAPI",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/Controller/main.py"
+            "program": "${workspaceFolder}/main.py"
         }
     ]
 }
