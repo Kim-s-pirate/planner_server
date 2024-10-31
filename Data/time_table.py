@@ -113,7 +113,7 @@ class time_table_data(BaseModel):
     
     def to_dict(self):
         return {
-            "date": self.date,
+            "date": str(self.date),
             "subject_id": self.subject_id,
             "time": [str(t) for t in self.time]
         }
