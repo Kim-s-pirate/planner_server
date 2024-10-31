@@ -13,7 +13,14 @@ from collections import defaultdict
 
 router = APIRouter(tags=["book"], prefix="/book")
 
-@router.post("/register", summary="책 등록", description="책을 등록합니다.")
+@router.post("/register", summary="책 등록", description="책을 등록합니다.", responses={
+    201: {"description": "성공", "content": {"application/json": {"example": {"message": "Book registered successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    409: {"description": "중복된 제목", "content": {"application/json": {"example": {"message": "Book already exists"}}}},
+    500: {"description": "등록 실패", "content": {"application/json": {"example": {"message": "Book registration failed"}}}}
+})
 async def book_register(request: Request, book_data: book_register):
     db = get_db()
     try:
@@ -53,7 +60,14 @@ async def book_register(request: Request, book_data: book_register):
     finally:
         db.close()
 
-@router.get("/check_title_available", summary="책 제목 중복 확인", description="책 제목이 중복되는지 확인합니다.")
+@router.get("/check_title_available", summary="책 제목 중복 확인", description="책 제목이 중복되는지 확인합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Title is available"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    409: {"description": "중복된 제목", "content": {"application/json": {"example": {"message": "Book already exists"}}}},
+    500: {"description": "중복 확인 실패", "content": {"application/json": {"example": {"message": "Book check failed"}}}}
+})
 async def check_title_available(request: Request, title: str):
     db = get_db()
     try:
@@ -74,7 +88,15 @@ async def check_title_available(request: Request, title: str):
     finally:
         db.close()
 
-@router.get("/id/{id}", summary="책 id 조회", description="책을 id를 통해서 조회합니다.")
+@router.get("/id/{id}", summary="책 id 조회", description="책을 id를 통해서 조회합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": {"id": "1", "name": "Sample Book"}}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to view this book"}}}},
+    404: {"description": "사용자 없음", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    500: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+})
 async def get_book_by_id(request: Request, id: str):
     db = get_db()
     try:
@@ -114,7 +136,14 @@ async def get_book_by_id(request: Request, id: str):
     finally:
         db.close()
 
-@router.get("/list", summary="책 목록 조회", description="책 목록을 조회합니다.")
+@router.get("/list", summary="책 목록 조회", description="책 목록을 조회합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": [{"id": "1", "name": "Sample Book"}]}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    404: {"description": "사용자 없음", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    500: {"description": "목록 조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+})
 async def get_book_list(request: Request):
     db = get_db()
     try:
@@ -154,7 +183,14 @@ async def get_book_list(request: Request):
     finally:
         db.close()
 
-@router.get("/list_by_subject", summary="과목별 책 목록 조회", description="과목별로 나누어 책 목록을 조회합니다.")
+@router.get("/list_by_subject", summary="과목별 책 목록 조회", description="과목별로 나누어 책 목록을 조회합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": []}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    404: {"description": "사용자 없음", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    500: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+})
 async def get_book_list_by_subject(request: Request):
     db = get_db()
     try:
@@ -204,7 +240,15 @@ async def get_book_list_by_subject(request: Request):
 #책은 활성화 비활성화 모두를 반환하지만 거기서 사용하는 몫은 프론트에게 전가
 #예외는 활성화책 비활성화책 목록 반환하는 엔드포인트만 냅두면 됌
 
-@router.get("list/{subject_id}", summary="과목 책 조회", description="해당 과목에 속하는 책 목록을 조회합니다.")
+@router.get("list/{subject_id}", summary="과목 책 조회", description="해당 과목에 속하는 책 목록을 조회합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": {"subject": {}, "books": []}}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to view this book"}}}},
+    404: {"description": "사용자 없음", "content": {"application/json": {"example": {"message": "User not found"}}}},
+    500: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+})
 async def book_list_by_subject(request: Request, subject_id: str):
     db = get_db()
     try:
@@ -243,7 +287,13 @@ async def book_list_by_subject(request: Request, subject_id: str):
     finally:
         db.close()
 
-@router.get("/list/status/{status}", summary="책 상태별 조회", description="활성화/비활성화된 책 목록을 조회합니다.")
+@router.get("/list/status/{status}", summary="책 상태별 조회", description="활성화/비활성화된 책 목록을 조회합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": []}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    409: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+})
 async def book_list_by_status(request: Request, status: bool):
     db = get_db()
     try:
@@ -281,7 +331,13 @@ async def book_list_by_status(request: Request, status: bool):
 
 # 통합 검색 기능
 # 알고리즘 최적화
-@router.get("/search/{keyword}", summary="책 검색", description="키워드로 책을 검색합니다.")
+@router.get("/search/{keyword}", summary="책 검색", description="키워드로 책을 검색합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": []}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    409: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+})
 async def book_search(request: Request, keyword: str):
     db = get_db()
     try:
@@ -329,7 +385,14 @@ async def book_search(request: Request, keyword: str):
         db.close()
 
 #전체 edit은 디자인 보고 채용 여부 결정
-@router.post("/edit/title/{id}", summary="책 제목 수정", description="책 제목을 수정합니다.")
+@router.post("/edit/title/{id}", summary="책 제목 수정", description="책 제목을 수정합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+})
 async def edit_title(request: Request, book_data: book_title, id: str):
     db = get_db()
     try:
@@ -369,7 +432,15 @@ async def edit_title(request: Request, book_data: book_title, id: str):
     finally:
         db.close()
 
-@router.post("/edit/subject_id/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.")
+@router.post("/edit/subject_id/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": {"message": "Subject not found"}}}},
+    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+})
 async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
     db = get_db()
     try:
@@ -406,7 +477,16 @@ async def edit_subject_id(request: Request, book_data: book_subject_id, id: str)
     finally:
         db.close()
 
-@router.post("/edit/page/{id}", summary="책 페이지 수정", description="책 페이지를 수정합니다.")
+@router.post("/edit/page/{id}", summary="책 페이지 수정", description="책 페이지를 수정합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+    400: {"description": "잘못된 페이지 번호", "content": {"application/json": {"example": {"message": "Page number cannot be negative"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+})
 async def edit_page(request: Request, book_data: book_page, id: str):
     db = get_db()
     try:
@@ -446,7 +526,15 @@ async def edit_page(request: Request, book_data: book_page, id: str):
     finally:
         db.close()
 
-@router.post("/edit/memo/{id}", summary="책 메모 수정", description="책 메모를 수정합니다.")
+@router.post("/edit/memo/{id}", summary="책 메모 수정", description="책 메모를 수정합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+})
 async def edit_memo(request: Request, book_data: book_memo, id: str):
     db = get_db()
     try:
@@ -480,7 +568,15 @@ async def edit_memo(request: Request, book_data: book_memo, id: str):
     finally:
         db.close()
 
-@router.post("/edit/status/{id}", summary="책 상태 수정", description="책 상태를 수정합니다.")
+@router.post("/edit/status/{id}", summary="책 상태 수정", description="책 상태를 수정합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+})
 async def edit_status(request: Request, book_data: book_status, id: str):
     db = get_db()
     try:
@@ -514,7 +610,15 @@ async def edit_status(request: Request, book_data: book_status, id: str):
     finally:
         db.close()
 
-@router.delete("/delete/{id}", summary="책 id 삭제", description="책을 id로 삭제합니다.")
+@router.delete("/delete/{id}", summary="책 id 삭제", description="책을 id로 삭제합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book deleted successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "삭제 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to delete this book"}}}},
+    404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
+    409: {"description": "삭제 실패", "content": {"application/json": {"example": {"message": "Book delete failed"}}}}
+})
 async def delete_book(request: Request, id: str):
     db = get_db()
     try:
