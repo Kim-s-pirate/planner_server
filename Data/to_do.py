@@ -39,7 +39,7 @@ class to_do_data(BaseModel):
     
     def to_dict(self):
         return {
-            "date": self.date,
+            "date": str(self.date),
             "title": self.title,
             "status": self.status,
             "book_id": self.book_id,
