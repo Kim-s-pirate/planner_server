@@ -75,7 +75,6 @@ async def login(request: Request, user_data: user_login):
     except UserNotFoundError as e:
         return JSONResponse(status_code=404, content={"message": "ID or password does not match"})
     except Exception as e:
-        raise e
         return JSONResponse(status_code=500, content={"message": "User login failed"})
     finally:
         db.close()
@@ -104,14 +103,20 @@ async def logout(request: Request):
         db.close()
 
 # OAuth2
-@router.get('/oauth2/login', summary="OAuth2 로그인", description="OAuth2 로그인")
+@router.get('/oauth2/login', summary="OAuth2 로그인", description="OAuth2 로그인", responses={
+        200: {"description": "리다이렉트 성공"}
+})
 async def login(request: Request):
     # state = secrets.token_urlsafe(16)
     # request.session['state'] = state
     authorization_url, _ = oauth_google.create_authorization_url(GOOGLE_AUTHORIZATION_URL)
     return RedirectResponse(authorization_url)
 
-@router.get('/login/oauth/google', summary="구글 로그인", description="""구글 로그인. OAuth2 인증 코드를 받아서 사용자 정보를 가져옴.""")
+@router.get('/login/oauth/google', summary="구글 로그인", description="""구글 로그인. OAuth2 인증 코드를 받아서 사용자 정보를 가져옴.""", responses={
+        200: {"description": "로그인 성공", "content": {"application/json": {"example": {"message": "User logged in successfully"}}}},
+        404: {"description": "회원가입 필요", "content": {"application/json": {"example": {"message": "User needs to register"}}}},
+        500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "User login failed"}}}}
+})
 async def auth(request: Request):
     try:
         # Exchange authorization code for access token
@@ -134,7 +139,10 @@ async def auth(request: Request):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
     
-@router.get("/oauth2/naver/get_state", summary="네이버 Oauth2 state 값 생성", description="네이버 로그인. state 값을 받아서 쿠키에 저장함.")
+@router.get("/oauth2/naver/get_state", summary="네이버 Oauth2 state 값 생성", description="네이버 로그인. state 값을 받아서 쿠키에 저장함.", responses={
+        200: {"description": "state 값 생성 성공", "content": {"application/json": {"example": {"state": "state value"}}}},
+        500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Runtime error"}}}}
+})
 async def get_state(request: Request):
     try:
         state = secrets.token_urlsafe(16)
@@ -146,7 +154,11 @@ async def get_state(request: Request):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
-@router.post('/login/oauth/naver', summary="네이버 로그인", description="네이버 로그인. OAuth2 인증 코드를 받아서 사용자 정보를 가져옴.")
+@router.post('/login/oauth/naver', summary="네이버 로그인", description="네이버 로그인. OAuth2 인증 코드를 받아서 사용자 정보를 가져옴.", responses={
+        200: {"description": "로그인 성공", "content": {"application/json": {"example": {"message": "User logged in successfully"}}}},
+        404: {"description": "회원가입 필요", "content": {"application/json": {"example": {"message": "User needs to register"}}}},
+        500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Runtime error"}}}}
+})
 async def auth(request: Request, naver_data: naver_data):
     try:
         code = naver_data.code
@@ -180,7 +192,11 @@ async def auth(request: Request, naver_data: naver_data):
         return JSONResponse(status_code=500, content={"message": str(e)})
     
 
-@router.post("/sound_setting", summary="사운드 설정", description="사운드 설정 변경")
+@router.post("/sound_setting", summary="사운드 설정", description="사운드 설정 변경", responses={
+        200: {"description": "사운드 설정 성공", "content": {"application/json": {"example": {"message": "Sound setting updated successfully"}}}},
+        400: {"description": "잘못된 사운드 설정", "content": {"application/json": {"example": {"message": "Invalid sound setting"}}}},
+        500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Sound setting update failed"}}}}
+})
 async def sound_setting(request: Request, sound_setting: int):
     db = get_db()
     try:
