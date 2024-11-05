@@ -1,0 +1,22 @@
+name: Auto deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key
+          chmod 600 private_key
+
+      - name: Deploy to EC2
+        run: |
+          ssh -i private_key -o StrictHostKeyChecking=no ubuntu@ec2-3-38-23-48.ap-northeast-2.compute.amazonaws.com 'sudo lsof -t -i :1500 | xargs sudo kill -9 && cd ~/planner_server && git pull && screen -S server -X stuff "cd ~/planner_server\n" && screen -S server -X stuff "python3 main.py\n"'
