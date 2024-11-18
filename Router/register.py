@@ -11,6 +11,7 @@ from Service.log_service import *
 from starlette.status import *
 from fastapi import Query, Request
 from Service.authorization_service import *
+from Service.email_service import *
 from Data.oauth import *
 
 router = APIRouter(tags=["account"], prefix="/account")
@@ -36,6 +37,8 @@ async def register(user_data: user_register):
     try:
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
         db.execute(text("SAVEPOINT savepoint"))
+        if email_service.is_valid_email(user_data.email) is False:
+            raise InvalidEmailError
         state=user_data.state
         found_state = email_service.find_state(user_data.email, db)
 
@@ -54,6 +57,9 @@ async def register(user_data: user_register):
     except EmptyEmailError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=400, content={"message": "Email cannot be blank"})
+    except InvalidEmailError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=400, content={"message": "Invalid email"})
     except EmailContainsSpacesError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=400, content={"message": "Email cannot contain spaces"})
@@ -116,6 +122,8 @@ async def check_userid_available(userid: str):
 async def check_email_available(email: str):
     db = get_db()
     try:
+        if email_service.is_valid_email(email) is False:
+            raise InvalidEmailError
         if user_service.is_email_exists(email, db):
             raise UserAlreadyExistsError
         return JSONResponse(status_code=200, content={"message": "Email is available"})
@@ -123,6 +131,8 @@ async def check_email_available(email: str):
         return JSONResponse(status_code=409, content={"message": "Email already exists"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "User check failed"})
+    except InvalidEmailError:
+        return JSONResponse(status_code=400, content={"message": "Invalid email"})
     finally:
         db.close()
 
@@ -320,6 +330,7 @@ async def delete_user(request: Request, id: str):
         result = user_service.delete_user_by_id(id, db)
         if not result:
             raise UserNotFoundError
+        AuthorizationService.delete_session(request)
         return JSONResponse(status_code=200, content={"message": "User deleted successfully"})
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)

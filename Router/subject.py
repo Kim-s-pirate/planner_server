@@ -35,6 +35,7 @@ async def subject_create(request: Request, subject_data: subject_register):
         subject_data = subject_service.to_subject_db(subject_data, requester_id)
         subject = subject_service.create_subject(subject_data, db)
         subject = subject_service.to_subject_data(subject).__dict__
+        del subject['user_id']
         return JSONResponse(status_code=201, content=subject)
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
@@ -343,6 +344,9 @@ async def edit_color(request: Request, id: str, new_color: subject_color):
     except SubjectNotFoundError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=404, content={"message": "Subject not found"})
+    except ColorAlreadyUsedError as e:
+        rollback_to_savepoint(db)
+        return JSONResponse(status_code=409, content={"message": "Color already used"})
     except Exception as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=500, content={"message": "Subject edit failed"})

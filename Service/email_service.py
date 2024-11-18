@@ -2,6 +2,7 @@ from datetime import timedelta
 from sqlalchemy import extract
 from Database.models import *
 from Database.database import db
+import re
 
 class email_service:
     def to_verification_db(email: str, code: str):
@@ -41,3 +42,7 @@ class email_service:
     
     def find_state(email: str, db):
         return db.query(state).filter(state.email == email).first()
+    
+    def is_valid_email(email: str) -> bool:
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        return re.match(email_regex, email) is not None

@@ -93,6 +93,9 @@ class subject_service:
     def edit_color(new_color: str, id: str, user_id: str, db):
         if not new_color in COLOR_SET:
             raise InvalidSubjectDataError
+        elif new_color in COLOR_SET and new_color not in subject_service.remain_color(user_id, db):
+            raise ColorAlreadyUsedError
+        # 이거 Color Already Used Error로 바꾸기
         found_subject = subject_service.find_another_subject_by_color(new_color, id, user_id, db)
         target_subject = subject_service.find_subject_by_id(id, db)
         if not target_subject:
