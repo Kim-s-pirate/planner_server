@@ -43,6 +43,8 @@ class subject_service:
                 raise SubjectAlreadyExistsError
             db.add(subject)
             db.commit()
+            db.refresh(subject)
+            return subject
         except Exception as e:
             raise e
 

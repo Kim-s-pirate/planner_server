@@ -33,8 +33,9 @@ async def subject_create(request: Request, subject_data: subject_register):
         db.execute(text("SAVEPOINT savepoint"))
         requester_id = AuthorizationService.verify_session(request, db)["id"]
         subject_data = subject_service.to_subject_db(subject_data, requester_id)
-        subject_service.create_subject(subject_data, db)
-        return JSONResponse(status_code=201, content={"message": "Subject registered successfully"})
+        subject = subject_service.create_subject(subject_data, db)
+        subject = subject_service.to_subject_data(subject).__dict__
+        return JSONResponse(status_code=201, content=subject)
     except SessionIdNotFoundError as e:
         rollback_to_savepoint(db)
         return JSONResponse(status_code=401, content={"message": "Token not found"})
