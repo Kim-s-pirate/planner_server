@@ -2,17 +2,15 @@ import os
 import random
 import secrets
 from aiosmtplib import send
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 from typing import List
 from fastapi import APIRouter
-import yagmail
 from Data.email import *
 from Database.database import get_db
 from Database.models import hash_id
 from Service.email_service import *
-from fastapi.templating import Jinja2Templates
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
@@ -20,8 +18,7 @@ from jinja2 import Environment, FileSystemLoader
 template_dir = os.path.join(os.path.dirname(__file__), "../Resource")
 env = Environment(loader=FileSystemLoader(template_dir))
 router = APIRouter(tags=["email"], prefix="/email")
-#This code test is done. It works well.
-# -> need to be make real email, app password
+
 load_dotenv(".env")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -37,33 +34,32 @@ gmail_password = password
 subject = 'Test Email'
 body = 'This is a test email sent using yagmail.'
 
+async def send_email(message: str):
+    await send(
+        message,
+        hostname=SMTP_SERVER,
+        port=SMTP_PORT,
+        start_tls=True,
+        username=SMTP_USER,
+        password=SMTP_PASSWORD
+    )
 
 @router.post("/send_verification_email", summary="이메일 전송", description="회원가입 이메일 전송", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Email sent successfully!"}}}},
     500: {"description": "이메일 전송 실패", "content": {"application/json": {"example": {"message": "There was some error while sending the email"}}}}
 })
-async def send_email(request: Request, email: email_request):
+async def send_email(request: Request, email: email_request, background_tasks: BackgroundTasks):
     try:
         message = MIMEMultipart()
         message["From"] = SMTP_USER
         message["To"] = email.email
         message["Subject"] = "회원가입 이메일 인증"
         email = email.email
-        subject = "회원가입 이메일 인증"
         verification_code = ''.join(random.choices('0123456789', k=6))
         template = env.get_template("email_verification_form.html")
         body = template.render(verification_code=verification_code)
         message.attach(MIMEText(body, "html"))
-        # 이메일 전송
-        await send(
-            message,
-            hostname=SMTP_SERVER,
-            port=SMTP_PORT,
-            start_tls=True,
-            username=SMTP_USER,
-            password=SMTP_PASSWORD
-        )
-
+        background_tasks.add_task(send_email, message)
         email_service.register_verification(email, verification_code, db)
         return {"message": "Email sent successfully!"}
     except Exception as e:
