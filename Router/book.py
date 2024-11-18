@@ -240,7 +240,7 @@ async def get_book_list_by_subject(request: Request):
 #책은 활성화 비활성화 모두를 반환하지만 거기서 사용하는 몫은 프론트에게 전가
 #예외는 활성화책 비활성화책 목록 반환하는 엔드포인트만 냅두면 됌
 
-@router.get("list/{subject_id}", summary="과목 책 조회", description="해당 과목에 속하는 책 목록을 조회합니다.", responses={
+@router.get("/list/{subject_id}", summary="과목 책 조회", description="해당 과목에 속하는 책 목록을 조회합니다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": {"subject": {}, "books": []}}}}},
     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
