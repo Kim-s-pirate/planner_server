@@ -90,22 +90,19 @@ async def get_subject_by_id(request: Request, id: str):
             requester_id = AuthorizationService.verify_session(request, db)["id"]
             found_subject = subject_service.find_subject_by_id(id, db)
             if not found_subject:
-                raise UnauthorizedError
+                raise SubjectNotFoundError
             AuthorizationService.check_authorization(requester_id, found_subject.user_id)
-            user = user_service.find_user_by_id(found_subject.user_id, db)
-            if not user:
-                raise UserNotFoundError
-            user = user_service.to_user_data(user).__dict__
             found_subject = subject_service.to_subject_data(found_subject).__dict__
-            found_subject['user'] = user
             del found_subject['user_id']
-            return JSONResponse(status_code=200, content={"message": found_subject})
+            return JSONResponse(status_code=200, content=found_subject)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError:
             return JSONResponse(status_code=417, content={"message": "Token verification failed"})
         except SessionExpiredError as e:
             return JSONResponse(status_code=440, content={"message": "Session expired"})
+        except SubjectNotFoundError as e:
+            return JSONResponse(status_code=404, content={"message": "Subject not found"})
         except UnauthorizedError as e:
             return JSONResponse(status_code=403, content={"message": "You are not authorized to view this subject"})
         except Exception as e:
@@ -128,14 +125,11 @@ async def get_subject_by_title(request: Request, title: str):
             found_subject = subject_service.find_subject_by_title(title, requester_id, db)
             if not found_subject:
                 raise SubjectNotFoundError
-            user = user_service.find_user_by_id(found_subject.user_id, db)
-            if not user:
-                raise UserNotFoundError
-            user = user_service.to_user_data(user).__dict__
+            AuthorizationService.check_authorization(requester_id, found_subject.user_id)
             found_subject = subject_service.to_subject_data(found_subject).__dict__
-            found_subject['user'] = user
             del found_subject['user_id']
-            return JSONResponse(status_code=200, content={"message": found_subject})
+            result = {"user_id" : requester_id,"subject" : found_subject}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -162,15 +156,11 @@ async def get_subject_list(request: Request):
             found_subject = subject_service.find_subject_by_user_id(requester_id, db)
             if not found_subject:
                 raise SubjectNotFoundError
-            user = user_service.find_user_by_id(found_subject[0].user_id, db)
-            if not user:
-                raise UserNotFoundError
-            user = user_service.to_user_data(user).__dict__
             found_subject = [subject_service.to_subject_data(subject).__dict__ for subject in found_subject]
             for subject in found_subject:
-                subject['user'] = user
                 del subject['user_id']
-            return JSONResponse(status_code=200, content={"message": found_subject})
+            result = {"user_id" : requester_id,"subject_list" : found_subject}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -210,7 +200,7 @@ async def get_subject_color(request: Request, id: str):
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "Color find failed"})
 
-@router.get("/subject/remain_color",summary="사용 가능 색상 반환",description="현재 사용중인 과목 색상을 제외한 사용 가능한 과목 색상을 반환한다.",responses={
+@router.get("/remain_color",summary="사용 가능 색상 반환",description="현재 사용중인 과목 색상을 제외한 사용 가능한 과목 색상을 반환한다.",responses={
     200: {"description": "사용 가능 색상 반환 성공", "content": {"application/json": {"example": { "message": "Remain color returned successfully"}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
@@ -222,7 +212,8 @@ async def remain_color(request: Request):
         try:
             requester_id = AuthorizationService.verify_session(request, db)["id"]
             remain_color = subject_service.remain_color(requester_id, db)
-            return JSONResponse(status_code=200, content={"message": remain_color})
+            result = {"user_id" : requester_id,"remain_color" : remain_color}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:

@@ -26,8 +26,13 @@ async def book_register(request: Request, book_data: book_register):
         try:
             requester_id = AuthorizationService.verify_session(request, db)["id"]
             book_data = book_service.to_book_db(book_data, requester_id)
-            book_service.register_book(book_data, db)
-            return JSONResponse(status_code=201, content={"message": "Book registered successfully"})
+            book = book_service.register_book(book_data, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            del book['subject_id']
+            book['subject'] = subject
+            return JSONResponse(status_code=201, content=book)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -90,10 +95,6 @@ async def get_book_by_id(request: Request, id: str):
             if not found_book:
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            user = user_service.find_user_by_id(found_book.user_id, db)
-            if not user:
-                raise UserNotFoundError
-            user = user_service.to_user_data(user).__dict__
             subject = subject_service.find_subject_by_id(found_book.subject_id, db)
             if not subject:
                 subject = None
@@ -101,11 +102,9 @@ async def get_book_by_id(request: Request, id: str):
                 subject = subject_service.to_subject_data(subject).__dict__
                 del subject['user_id']
             found_book = book_service.to_book_data(found_book).__dict__
-            found_book['user'] = user
-            found_book['subject'] = subject
             del found_book['subject_id']
-            del found_book['user_id']
-            return JSONResponse(status_code=200, content={"message": found_book})
+            found_book['subject'] = subject
+            return JSONResponse(status_code=200, content=found_book)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -136,10 +135,6 @@ async def get_book_list(request: Request):
                 raise BookNotFoundError
             found_book = []
             for book in book_list:
-                user = user_service.find_user_by_id(book.user_id, db)
-                if not user:
-                    raise UserNotFoundError
-                user = user_service.to_user_data(user).__dict__
                 subject = subject_service.find_subject_by_id(book.subject_id, db)
                 if not subject:
                     subject = None
@@ -147,12 +142,12 @@ async def get_book_list(request: Request):
                     subject = subject_service.to_subject_data(subject).__dict__
                     del subject['user_id']
                 book = book_service.to_book_data(book).__dict__
-                book['user'] = user
                 book['subject'] = subject
                 del book['subject_id']
                 del book['user_id']
                 found_book.append(book)
-            return JSONResponse(status_code=200, content={"message": found_book})
+            result = {"user_id": requester_id, "book_list": found_book}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -181,10 +176,6 @@ async def get_book_list_by_subject(request: Request):
                 raise BookNotFoundError
             grouped_books = defaultdict(list)
             for book in book_list:
-                user = user_service.find_user_by_id(book.user_id, db)
-                if not user:
-                    raise UserNotFoundError
-                user = user_service.to_user_data(user).__dict__
                 subject = subject_service.find_subject_by_id(book.subject_id, db)
                 if not subject:
                     subject = None
@@ -192,7 +183,6 @@ async def get_book_list_by_subject(request: Request):
                     subject = subject_service.to_subject_data(subject).__dict__
                     del subject['user_id']
                 book = book_service.to_book_data(book).__dict__
-                book['user'] = user
                 del book['subject_id']
                 del book['user_id']
                 grouped_books[subject['id']].append(book)
@@ -204,7 +194,8 @@ async def get_book_list_by_subject(request: Request):
                     del subject_info['user_id']
                     subject_info['books'] = books
                     result.append(subject_info)
-            return JSONResponse(status_code=200, content={"message": result})
+            result = {"user_id": requester_id, "list": result}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -237,13 +228,11 @@ async def book_list_by_subject(request: Request, subject_id: str):
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, book_subject.user_id)
             found_book = book_service.find_book_by_subject_id(subject_id, db)
-            user = user_service.find_user_by_id(book_subject.user_id, db)
             subject = subject_service.to_subject_data(book_subject).__dict__
-            user = user_service.to_user_data(user).__dict__
-            subject['user'] = user
             del subject['user_id']
-            data = {
-                'subject': subject,
+            result = {
+                "user_id": requester_id,
+                "subject": subject,
             }
             book_list = []
             for book_entity in found_book:
@@ -251,8 +240,8 @@ async def book_list_by_subject(request: Request, subject_id: str):
                 del book['user_id']
                 del book['subject_id']
                 book_list.append(book)
-            data['books'] = book_list
-            return JSONResponse(status_code=200, content={"message": data})
+            result['books'] = book_list
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -278,10 +267,6 @@ async def book_list_by_status(request: Request, status: bool):
             book_list = book_service.find_book_by_status(status, requester_id, db)
             found_book = []
             for book in book_list:
-                user = user_service.find_user_by_id(book.user_id, db)
-                if not user:
-                    raise UserNotFoundError
-                user = user_service.to_user_data(user).__dict__
                 subject = subject_service.find_subject_by_id(book.subject_id, db)
                 if not subject:
                     subject = None
@@ -289,12 +274,12 @@ async def book_list_by_status(request: Request, status: bool):
                     subject = subject_service.to_subject_data(subject).__dict__
                     del subject['user_id']
                 book = book_service.to_book_data(book).__dict__
-                book['user'] = user
                 book['subject'] = subject
                 del book['subject_id']
                 del book['user_id']
                 found_book.append(book)
-            return JSONResponse(status_code=200, content={"message": found_book})
+            result = {"user_id": requester_id, "book_list": found_book}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -326,10 +311,6 @@ async def book_search(request: Request, keyword: str):
             book_list = book_list + books
             found_book = []
             for book in book_list:
-                user = user_service.find_user_by_id(book.user_id, db)
-                if not user:
-                    raise UserNotFoundError
-                user = user_service.to_user_data(user).__dict__
                 subject = subject_service.find_subject_by_id(book.subject_id, db)
                 if not subject:
                     subject = None
@@ -337,7 +318,6 @@ async def book_search(request: Request, keyword: str):
                     subject = subject_service.to_subject_data(subject).__dict__
                     del subject['user_id']
                 book = book_service.to_book_data(book).__dict__
-                book['user'] = user
                 book['subject'] = subject
                 del book['subject_id']
                 del book['user_id']
@@ -346,7 +326,8 @@ async def book_search(request: Request, keyword: str):
             for book in found_book:
                 unique_books[book['id']] = book
             found_book = list(unique_books.values())
-            return JSONResponse(status_code=200, content={"message": found_book})
+            result = {"user_id": requester_id, "book_list": found_book}
+            return JSONResponse(status_code=200, content = result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -374,8 +355,14 @@ async def edit_title(request: Request, book_data: book_title, id: str):
             if not found_book:
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            book_service.edit_title(book_data.title, id, requester_id, db)
-            return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+            book = book_service.edit_title(book_data.title, id, requester_id, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            book['subject'] = subject
+            del book['subject_id']
+            result = {"user_id": requester_id, "book": book}
+            return JSONResponse(status_code=200, content= result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -393,7 +380,7 @@ async def edit_title(request: Request, book_data: book_title, id: str):
         except Exception as e:
             return JSONResponse(status_code=409, content={"message": "Book edit failed"})
 
-@router.post("/edit/subject_id/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
+@router.post("/edit/subject/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
@@ -410,8 +397,16 @@ async def edit_subject_id(request: Request, book_data: book_subject_id, id: str)
             if not found_book:
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            book_service.edit_subject_id(book_data.subject_id, id, db)
-            return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+            book = book_service.edit_subject_id(book_data.subject_id, id, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            del subject['user_id']
+            book['subject'] = subject
+            del book['subject_id']
+            del book['user_id']
+            result = {"user_id": requester_id, "book": book}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -445,8 +440,16 @@ async def edit_page(request: Request, book_data: book_page, id: str):
             if not found_book:
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            book_service.edit_page(book_data.start_page, book_data.end_page, id, db)
-            return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+            book = book_service.edit_page(book_data.start_page, book_data.end_page, id, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            del subject['user_id']
+            book['subject'] = subject
+            del book['subject_id']
+            del book['user_id']
+            result = {"user_id": requester_id, "book": book}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -481,8 +484,16 @@ async def edit_memo(request: Request, book_data: book_memo, id: str):
             if not found_book:
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            book_service.edit_memo(book_data.memo, id, db)
-            return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+            book = book_service.edit_memo(book_data.memo, id, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            del subject['user_id']
+            book['subject'] = subject
+            del book['subject_id']
+            del book['user_id']
+            result = {"user_id": requester_id, "book": book}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -513,8 +524,16 @@ async def edit_status(request: Request, book_data: book_status, id: str):
             if not found_book:
                 raise UnauthorizedError
             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            book_service.edit_status(book_data.status, id, db)
-            return JSONResponse(status_code=200, content={"message": "Book edited successfully"})
+            book = book_service.edit_status(book_data.status, id, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            del subject['user_id']
+            book['subject'] = subject
+            del book['subject_id']
+            del book['user_id']
+            result = {"user_id": requester_id, "book": book}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
