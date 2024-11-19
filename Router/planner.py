@@ -115,6 +115,7 @@ async def get_planner(request: Request, date: date):
             time_table_list = [planner_service.to_time_table_data(time_table).to_dict() for time_table in time_table_list]
             planner['to_do_list'] = to_do_list
             planner['time_table_list'] = time_table_list
-            return JSONResponse(status_code=200, content={"message": planner})
+            result = {"user_id": user_id, "date": date.isoformat(), "planner": planner}
+            return JSONResponse(status_code=200, content=result)
         except Exception as e:
-            return JSONResponse(status_code=500, content={"message": str(e)})
+            return JSONResponse(status_code=500, content={"message": "Panner find failed"})
