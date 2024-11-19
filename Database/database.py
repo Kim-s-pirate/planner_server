@@ -1,4 +1,5 @@
 # database.py
+from contextlib import contextmanager
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
@@ -21,8 +22,15 @@ def create_database():
         conn.commit()
     Base.metadata.create_all(bind=engine)
 
+@contextmanager
 def get_db():
-    return SessionLocal()
+    db = SessionLocal()
+    try:
+        yield db
+    except:
+        db.rollback()
+    finally:
+        db.close()
 
 def rollback_to_savepoint(db, savepoint_name="savepoint"):
     db.execute(text(f"ROLLBACK TO SAVEPOINT {savepoint_name}"))

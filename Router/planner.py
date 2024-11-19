@@ -19,19 +19,16 @@ router = APIRouter(tags=["planner"], prefix="/planner")
 # 주석 처리했음.
 # @router.post("/register")
 # async def planner_register(request: Request, planner_data: planner_register):
-#     try:
-#         db = get_db()
-#         requester_id = AuthorizationService.verify_session(request, db)["id"]
-#         planner_data = planner_service.verify_planner(planner_data, requester_id, db)
-#         planner_service.register_planner(requester_id, planner_data, db)
-#         db.commit()
-#         new_progress = achievement_service.get_progress_before_date(planner_data.date, requester_id, db)
-#         return JSONResponse(status_code=201, content={"message": new_progress})
-#     except Exception as e:
-#         raise e
-#         return JSONResponse(status_code=500, content={"message": str(e)})
-#     finally:
-#         db.close()
+#     with get_db() as db:
+#         try:
+#             requester_id = AuthorizationService.verify_session(request, db)["id"]
+#             planner_data = planner_service.verify_planner(planner_data, requester_id, db)
+#             planner_service.register_planner(requester_id, planner_data, db)
+#             db.commit()
+#             new_progress = achievement_service.get_progress_before_date(planner_data.date, requester_id, db)
+#             return JSONResponse(status_code=201, content={"message": new_progress})
+#         except Exception as e:
+#             return JSONResponse(status_code=500, content={"message": str(e)})
 
 #성과를 보여주는 코드 병합
 @router.get("/{date}", summary="플래너 조회", description="해당 날짜의 플래너를 조회한다.", responses={
@@ -107,20 +104,18 @@ router = APIRouter(tags=["planner"], prefix="/planner")
     500: {"description": "플래너 조회 실패", "content": {"application/json": {"example": {"message": "Runtime Error"}}}}
 })
 async def get_planner(request: Request, date: date):
-    try:
-        db = get_db()
-        session = AuthorizationService.verify_session(request, db)
-        user_id = session['id']
-        to_do_list = planner_service.find_to_do_by_date(date, user_id, db)
-        time_table_list = planner_service.find_time_table_by_date(date, user_id, db)
-        planner = {}
-        to_do_list = [planner_service.to_to_do_data(to_do).to_dict() for to_do in to_do_list]
-        time_table_list = [planner_service.to_time_table_data(time_table).to_dict() for time_table in time_table_list]
-        planner['to_do_list'] = to_do_list
-        planner['time_table_list'] = time_table_list
-        return JSONResponse(status_code=200, content={"message": planner})
-    except Exception as e:
-        raise e
-        return JSONResponse(status_code=500, content={"message": str(e)})
-    finally:
-        db.close()
+    with get_db() as db:
+        try:
+            session = AuthorizationService.verify_session(request, db)
+            user_id = session['id']
+            to_do_list = planner_service.find_to_do_by_date(date, user_id, db)
+            time_table_list = planner_service.find_time_table_by_date(date, user_id, db)
+            planner = {}
+            to_do_list = [planner_service.to_to_do_data(to_do).to_dict() for to_do in to_do_list]
+            time_table_list = [planner_service.to_time_table_data(time_table).to_dict() for time_table in time_table_list]
+            planner['to_do_list'] = to_do_list
+            planner['time_table_list'] = time_table_list
+            result = {"user_id": user_id, "date": date.isoformat(), "planner": planner}
+            return JSONResponse(status_code=200, content=result)
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"message": "Panner find failed"})

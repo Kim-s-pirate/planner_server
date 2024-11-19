@@ -79,6 +79,11 @@ class InvalidSoundSettingError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class InvalidEmailError(Exception):
+    def __init__(self, message="Invalid email address"):
+        self.message = message
+        super().__init__(self.message)
+
 # subject
 class SubjectNotFoundError(Exception):
     def __init__(self, message="Subject not found"):
@@ -102,6 +107,11 @@ class SubjectUpdateError(Exception):
 
 class ColorExhaustedError(Exception):
     def __init__(self, message="No more colors available in the COLOR_SET"):
+        self.message = message
+        super().__init__(self.message)
+
+class ColorAlreadyUsedError(Exception):
+    def __init__(self, message="Color already used"):
         self.message = message
         super().__init__(self.message)
 

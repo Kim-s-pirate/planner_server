@@ -62,6 +62,8 @@ class book_service:
                 raise SubjectNotFoundError
             db.add(book)
             db.commit()
+            db.refresh(book)
+            return book
         except Exception as e:
             raise e
 
@@ -109,6 +111,8 @@ class book_service:
             raise BookNotFoundError
         found_book.title = new_title
         db.commit()
+        db.refresh(found_book)
+        return found_book
 
     def edit_subject_id(new_subject_id: str, id: str, db):
         if subject_service.find_subject_by_id(new_subject_id, db) is None:
@@ -118,6 +122,8 @@ class book_service:
             raise BookNotFoundError
         found_book.subject_id = new_subject_id
         db.commit()
+        db.refresh(found_book)
+        return found_book
 
     def edit_page(new_start_page: int, new_end_page: int, id: str, db):
         if new_start_page < 0:
@@ -132,6 +138,8 @@ class book_service:
         found_book.start_page = new_start_page
         found_book.end_page = new_end_page
         db.commit()
+        db.refresh(found_book)
+        return found_book
 
     def edit_memo(new_memo: str, id: str, db):
         found_book = book_service.find_book_by_id(id, db)
@@ -139,6 +147,8 @@ class book_service:
             raise BookNotFoundError
         found_book.memo = new_memo
         db.commit()
+        db.refresh(found_book)
+        return found_book
 
     def edit_status(new_status: bool, id: str, db):
         found_book = book_service.find_book_by_id(id, db)
@@ -146,6 +156,8 @@ class book_service:
             raise BookNotFoundError
         found_book.status = new_status
         db.commit()
+        db.refresh(found_book)
+        return found_book
 
     def delete_book_by_id(id: str, db):
         result = db.query(book).filter(book.id == id).delete()
