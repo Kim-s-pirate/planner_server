@@ -22,7 +22,13 @@ def create_database():
     Base.metadata.create_all(bind=engine)
 
 def get_db():
-    return SessionLocal()
+    db = SessionLocal()
+    try:
+        yield db
+    except:
+        db.rollback()
+    finally:
+        db.close()
 
 def rollback_to_savepoint(db, savepoint_name="savepoint"):
     db.execute(text(f"ROLLBACK TO SAVEPOINT {savepoint_name}"))
