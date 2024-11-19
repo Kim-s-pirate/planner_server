@@ -71,8 +71,6 @@ app.include_router(achievement.router)
 
 # CORS
 origins = [
-    "http://localhost:5173",
-    "http://218.239.229.119:5173",
     "*"
 ]
 
