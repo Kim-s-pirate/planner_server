@@ -1,4 +1,5 @@
 # database.py
+from contextlib import contextmanager
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
@@ -21,6 +22,7 @@ def create_database():
         conn.commit()
     Base.metadata.create_all(bind=engine)
 
+@contextmanager
 def get_db():
     db = SessionLocal()
     try:

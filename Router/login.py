@@ -53,31 +53,29 @@ oauth_naver = OAuth2Session(NAVER_CLIENT_ID, redirect_uri=NAVER_AUTHORIZATION_UR
         500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "User login failed"}}}}
 })
 async def login(request: Request, user_data: user_login):
-    db = get_db()
-    try:
-        session_id = AuthorizationService.get_session(request)
-        if session_id:
-            verify = AuthorizationService.check_session(request)
-            if verify:
-                raise DuplicateLoginError
-        found_user = user_service.find_user_by_email(user_data.email, db)
-        if not found_user or user_data.password != found_user.password:
-            raise UserNotFoundError
-        session_id = AuthorizationService.generate_session(request, found_user.userid, found_user.id)
-        response = JSONResponse(
-            status_code=200,
-            content={"message": "User logged in successfully"}
-        )
-        response.set_cookie(key="session_id", value=session_id, httponly=True)
-        return response
-    except DuplicateLoginError as e:
-        return JSONResponse(status_code=226, content={"message": "Already logged in"})
-    except UserNotFoundError as e:
-        return JSONResponse(status_code=404, content={"message": "ID or password does not match"})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": "User login failed"})
-    finally:
-        db.close()
+    with get_db() as db:
+        try:
+            session_id = AuthorizationService.get_session(request)
+            if session_id:
+                verify = AuthorizationService.check_session(request)
+                if verify:
+                    raise DuplicateLoginError
+            found_user = user_service.find_user_by_email(user_data.email, db)
+            if not found_user or user_data.password != found_user.password:
+                raise UserNotFoundError
+            session_id = AuthorizationService.generate_session(request, found_user.userid, found_user.id)
+            response = JSONResponse(
+                status_code=200,
+                content={"message": "User logged in successfully"}
+            )
+            response.set_cookie(key="session_id", value=session_id, httponly=True)
+            return response
+        except DuplicateLoginError as e:
+            return JSONResponse(status_code=226, content={"message": "Already logged in"})
+        except UserNotFoundError as e:
+            return JSONResponse(status_code=404, content={"message": "ID or password does not match"})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"message": "User login failed"})
 
 @router.get("/logout", summary="유저 로그아웃", description="유저 로그아웃", responses={
         200: {"description": "로그아웃 성공", "content": {"application/json": {"example": {"message": "User logged out successfully"}}}},
@@ -86,27 +84,25 @@ async def login(request: Request, user_data: user_login):
         500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while logging out the user"}}}}
 })
 async def logout(request: Request):
-    db = get_db()
-    try:
-        AuthorizationService.verify_session(request, db)
-        AuthorizationService.delete_session(request)
-        return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
-    except SessionIdNotFoundError as e:
-        return JSONResponse(status_code=401, content={"message": "Token not found"})
-    except SessionVerificationError as e:
-        return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-    except SessionExpiredError as e:
-        return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})
-    finally:
-        db.close()
+    with get_db() as db:
+        try:
+            AuthorizationService.verify_session(request, db)
+            AuthorizationService.delete_session(request)
+            return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
+        except SessionIdNotFoundError as e:
+            return JSONResponse(status_code=401, content={"message": "Token not found"})
+        except SessionVerificationError as e:
+            return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+        except SessionExpiredError as e:
+            return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"message": "There was some error while logging out the user"})
 
 # OAuth2
 @router.get('/oauth2/login', summary="OAuth2 로그인", description="OAuth2 로그인", responses={
         200: {"description": "리다이렉트 성공"}
 })
-async def login(request: Request):
+async def google_login(request: Request):
     # state = secrets.token_urlsafe(16)
     # request.session['state'] = state
     authorization_url, _ = oauth_google.create_authorization_url(GOOGLE_AUTHORIZATION_URL)
@@ -131,11 +127,11 @@ async def auth(request: Request):
         user_info = oauth_google.get(GOOGLE_USERINFO_URL, headers={"Authorization": f"Bearer {token['access_token']}"})
         user_data = user_info.json()
         print(user_data)
-        db = get_db()
-        if user_service.find_user_by_email(user_data["email"], db):
-            return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
-        else:
-            return JSONResponse(status_code=404, content={"message": "User needs to register"})
+        with get_db() as db:
+            if user_service.find_user_by_email(user_data["email"], db):
+                return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
+            else:
+                return JSONResponse(status_code=404, content={"message": "User needs to register"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
     
@@ -182,12 +178,11 @@ async def auth(request: Request, naver_data: naver_data):
         user_data = response.json()
         print(user_data)
 
-        db = get_db()
-        if user_service.find_user_by_email(user_data["response"]["email"], db):
-            return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
-        else:
-            return JSONResponse(status_code=404, content={"message": "User needs to register"})
-
+        with get_db() as db:
+            if user_service.find_user_by_email(user_data["response"]["email"], db):
+                return JSONResponse(status_code=200, content={"message": "User logged in successfully"})
+            else:
+                return JSONResponse(status_code=404, content={"message": "User needs to register"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
     
@@ -198,17 +193,15 @@ async def auth(request: Request, naver_data: naver_data):
         500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Sound setting update failed"}}}}
 })
 async def sound_setting(request: Request, sound_setting: int):
-    db = get_db()
-    try:
-        session = AuthorizationService.verify_session(request, db)
-        user_id = session['id']
-        if user_service.update_user_sound_setting(user_id, sound_setting, db):
-            return JSONResponse(status_code=200, content={"message": "Sound setting updated successfully"})
-        else:
-            raise Exception
-    except InvalidSoundSettingError as e:
-        return JSONResponse(status_code=400, content={"message": "Invalid sound setting"})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"message": "Sound setting update failed"})
-    finally:
-        db.close()
+    with get_db() as db:
+        try:
+            session = AuthorizationService.verify_session(request, db)
+            user_id = session['id']
+            if user_service.update_user_sound_setting(user_id, sound_setting, db):
+                return JSONResponse(status_code=200, content={"message": "Sound setting updated successfully"})
+            else:
+                raise Exception
+        except InvalidSoundSettingError as e:
+            return JSONResponse(status_code=400, content={"message": "Invalid sound setting"})
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"message": "Sound setting update failed"})

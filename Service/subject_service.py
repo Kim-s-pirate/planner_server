@@ -21,13 +21,10 @@ class subject_service:
 
     def to_subject_db(subject_register: subject_register, user_id: str):
         subject_service.validate_subject_data(subject_register)
-        try:
-            return subject(
-                user_id=user_id,
-                title=subject_register.title
-            )
-        except Exception as e:
-            raise e
+        return subject(
+            user_id=user_id,
+            title=subject_register.title
+        )
 
     def to_subject_data(subject_entity: subject):
         return subject_data(
@@ -58,7 +55,10 @@ class subject_service:
         return db.query(subject).filter(subject.title == title, subject.user_id == user_id, subject.id != id).first()
 
     def find_subject_by_user_id(user_id: str, db):
-        return db.query(subject).filter(subject.user_id == user_id).all()
+        try:
+            return db.query(subject).filter(subject.user_id == user_id).all()
+        except Exception as e:
+            print(e)
 
     def find_subject_by_color(color: str, user_id: str, db):
         return db.query(subject).filter(subject.color == color, subject.user_id == user_id).first()

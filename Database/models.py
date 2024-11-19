@@ -92,11 +92,11 @@ class subject(BaseEntity):
     __table_args__ = (UniqueConstraint('user_id', 'title', name='unique_user_id_title'),)
 
     def __init__(self, title, user_id, color=None):
-        db = get_db()
         from Service.subject_service import subject_service
-        self.title = title
-        self.user_id = user_id
-        self.color = color if color else subject_service.random_color(user_id, db)
+        with get_db() as db:
+            self.title = title
+            self.user_id = user_id
+            self.color = color if color else subject_service.random_color(user_id, db)
         
 class schedule(BaseEntity):#id
     __tablename__ = "calender"
