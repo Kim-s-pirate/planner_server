@@ -221,3 +221,18 @@ class ParameterError(Exception):
     def __init__(self, message="Parameter error"):
         self.message = message
         super().__init__(self.message)
+
+class InvalidStatusError(Exception):
+    def __init__(self, message="Invalid Status"):
+        self.message = message
+        super().__init__(self.message)
+
+class ExceedPageError(Exception):
+    def __init__(self, message="Page cannot exceed 9999 pages"):
+        self.message = message
+        super().__init__(self.message)
+
+class InvalidDateError(Exception):
+    def __init__(self, message="Invalid Date Input"):
+        self.message = message
+        super().__init__(self.message)

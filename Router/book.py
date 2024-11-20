@@ -19,6 +19,9 @@ router = APIRouter(tags=["book"], prefix="/book")
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
     409: {"description": "중복된 제목", "content": {"application/json": {"example": {"message": "Book already exists"}}}},
+    400: {"description": "페이지 번호 음수", "content": {"application/json": {"example": {"message": "Page number cannot be negative"}}}},
+    400: {"description": "페이지 크기 문제", "content": {"application/json": {"example": {"message": "Start page cannot be greater than end page"}}}},
+    400: {"description": "9999 페이지 초과", "content": {"application/json": {"example": {"message": "Page cannot exceed 9999 pages"}}}},
     500: {"description": "등록 실패", "content": {"application/json": {"example": {"message": "Book registration failed"}}}}
 })
 async def book_register(request: Request, book_data: book_register):
@@ -42,9 +45,11 @@ async def book_register(request: Request, book_data: book_register):
         except EmptyTitleError as e:
             return JSONResponse(status_code=409, content={"message": "Title cannot be blank"})
         except NegativePageNumberError as e:
-            return JSONResponse(status_code=409, content={"message": "Page number cannot be negative"})
+            return JSONResponse(status_code=400, content={"message": "Page number cannot be negative"})
         except PageRangeError as e:
-            return JSONResponse(status_code=409, content={"message": "Start page cannot be greater than end page"})
+            return JSONResponse(status_code=400, content={"message": "Start page cannot be greater than end page"})
+        except ExceedPageError as e:
+            return JSONResponse(status_code=400, content={"message": "Page cannot exceed 9999 pages"})
         except SubjectNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Subject not found"})
         except BookAlreadyExistsError as e:
@@ -253,17 +258,24 @@ async def book_list_by_subject(request: Request, subject_id: str):
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "Book find failed"})
 
-@router.get("/list/status/{status}", summary="책 상태별 조회", description="활성화/비활성화된 책 목록을 조회합니다.", responses={
+@router.get("/list/status/{status}", summary="책 상태별 조회", description="활성화/비활성화(active/inactive)된 책 목록을 조회합니다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": []}}}},
     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    404: {"description": "유효하지 않은 status", "content": {"application/json": {"example": {"message": "Invalid Status"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
     409: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
 })
-async def book_list_by_status(request: Request, status: bool):
+async def book_list_by_status(request: Request, status: str):
     with get_db() as db:
         try:
             requester_id = AuthorizationService.verify_session(request, db)["id"]
+            if status == "active":
+                status = True
+            elif status == "inactive":
+                status = False
+            else:
+                raise InvalidStatusError
             book_list = book_service.find_book_by_status(status, requester_id, db)
             found_book = []
             for book in book_list:
@@ -286,57 +298,59 @@ async def book_list_by_status(request: Request, status: bool):
             return JSONResponse(status_code=417, content={"message": "Token verification failed"})
         except SessionExpiredError as e:
             return JSONResponse(status_code=440, content={"message": "Session expired"})
+        except InvalidStatusError as e:
+            return JSONResponse(status_code=404, content={"message": "Invalid Status"})
         except Exception as e:
             return JSONResponse(status_code=409, content={"message": "Book find failed"})
 
 # 통합 검색 기능
 # 알고리즘 최적화
-@router.get("/search/{keyword}", summary="책 검색", description="키워드로 책을 검색합니다.", responses={
-    200: {"description": "성공", "content": {"application/json": {"example": {"message": []}}}},
-    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
-    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
-    409: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
-})
-async def book_search(request: Request, keyword: str):
-    with get_db() as db:
-        try:
-            requester_id = AuthorizationService.verify_session(request, db)["id"]
-            book_list = []
-            books = book_service.find_book_by_partial_title(keyword, requester_id, db)
-            book_list = book_list + books
-            books = book_service.find_book_by_initial(keyword, requester_id, db)
-            book_list = book_list + books
-            books = book_service.find_book_by_subject(keyword, requester_id, db)
-            book_list = book_list + books
-            found_book = []
-            for book in book_list:
-                subject = subject_service.find_subject_by_id(book.subject_id, db)
-                if not subject:
-                    subject = None
-                else:
-                    subject = subject_service.to_subject_data(subject).__dict__
-                    del subject['user_id']
-                book = book_service.to_book_data(book).__dict__
-                book['subject'] = subject
-                del book['subject_id']
-                del book['user_id']
-                found_book.append(book)
-            unique_books = {}
-            for book in found_book:
-                unique_books[book['id']] = book
-            found_book = list(unique_books.values())
-            result = {"user_id": requester_id, "book_list": found_book}
-            return JSONResponse(status_code=200, content = result)
-        except SessionIdNotFoundError as e:
-            return JSONResponse(status_code=401, content={"message": "Token not found"})
-        except SessionVerificationError as e:
-            return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-        except SessionExpiredError as e:
-            return JSONResponse(status_code=440, content={"message": "Session expired"})
-        except Exception as e:
-            print(e)
-            return JSONResponse(status_code=409, content={"message": "Book find failed"})
+# @router.get("/search/{keyword}", summary="책 검색", description="키워드로 책을 검색합니다.", responses={
+#     200: {"description": "성공", "content": {"application/json": {"example": {"message": []}}}},
+#     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+#     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+#     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+#     409: {"description": "조회 실패", "content": {"application/json": {"example": {"message": "Book find failed"}}}}
+# })
+# async def book_search(request: Request, keyword: str):
+#     with get_db() as db:
+#         try:
+#             requester_id = AuthorizationService.verify_session(request, db)["id"]
+#             book_list = []
+#             books = book_service.find_book_by_partial_title(keyword, requester_id, db)
+#             book_list = book_list + books
+#             books = book_service.find_book_by_initial(keyword, requester_id, db)
+#             book_list = book_list + books
+#             books = book_service.find_book_by_subject(keyword, requester_id, db)
+#             book_list = book_list + books
+#             found_book = []
+#             for book in book_list:
+#                 subject = subject_service.find_subject_by_id(book.subject_id, db)
+#                 if not subject:
+#                     subject = None
+#                 else:
+#                     subject = subject_service.to_subject_data(subject).__dict__
+#                     del subject['user_id']
+#                 book = book_service.to_book_data(book).__dict__
+#                 book['subject'] = subject
+#                 del book['subject_id']
+#                 del book['user_id']
+#                 found_book.append(book)
+#             unique_books = {}
+#             for book in found_book:
+#                 unique_books[book['id']] = book
+#             found_book = list(unique_books.values())
+#             result = {"user_id": requester_id, "book_list": found_book}
+#             return JSONResponse(status_code=200, content = result)
+#         except SessionIdNotFoundError as e:
+#             return JSONResponse(status_code=401, content={"message": "Token not found"})
+#         except SessionVerificationError as e:
+#             return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#         except SessionExpiredError as e:
+#             return JSONResponse(status_code=440, content={"message": "Session expired"})
+#         except Exception as e:
+#             print(e)
+#             return JSONResponse(status_code=409, content={"message": "Book find failed"})
 
 #전체 edit은 디자인 보고 채용 여부 결정
 @router.post("/edit/title/{id}", summary="책 제목 수정", description="책 제목을 수정합니다.", responses={
@@ -380,47 +394,47 @@ async def edit_title(request: Request, book_data: book_title, id: str):
         except Exception as e:
             return JSONResponse(status_code=409, content={"message": "Book edit failed"})
 
-@router.post("/edit/subject/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
-    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
-    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
-    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
-    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
-    404: {"description": "과목 없음", "content": {"application/json": {"example": {"message": "Subject not found"}}}},
-    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
-})
-async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
-    with get_db() as db:
-        try:
-            requester_id = AuthorizationService.verify_session(request, db)["id"]
-            found_book = book_service.find_book_by_id(id, db)
-            if not found_book:
-                raise UnauthorizedError
-            AuthorizationService.check_authorization(requester_id, found_book.user_id)
-            book = book_service.edit_subject_id(book_data.subject_id, id, db)
-            book = book_service.to_book_data(book).__dict__
-            subject = subject_service.find_subject_by_id(book['subject_id'], db)
-            subject = subject_service.to_subject_data(subject).__dict__
-            del subject['user_id']
-            book['subject'] = subject
-            del book['subject_id']
-            del book['user_id']
-            result = {"user_id": requester_id, "book": book}
-            return JSONResponse(status_code=200, content=result)
-        except SessionIdNotFoundError as e:
-            return JSONResponse(status_code=401, content={"message": "Token not found"})
-        except SessionVerificationError as e:
-            return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-        except SessionExpiredError as e:
-            return JSONResponse(status_code=440, content={"message": "Session expired"})
-        except UnauthorizedError as e:
-            return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
-        except SubjectNotFoundError as e:
-            return JSONResponse(status_code=404, content={"message": "Subject not found"})
-        except BookAlreadyExistsError as e:
-            return JSONResponse(status_code=409, content={"message": "Book already exists"})
-        except Exception as e:
-            return JSONResponse(status_code=409, content={"message": "Book edit failed"})
+# @router.post("/edit/subject/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
+#     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+#     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+#     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+#     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+#     403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+#     404: {"description": "과목 없음", "content": {"application/json": {"example": {"message": "Subject not found"}}}},
+#     409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+# })
+# async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
+#     with get_db() as db:
+#         try:
+#             requester_id = AuthorizationService.verify_session(request, db)["id"]
+#             found_book = book_service.find_book_by_id(id, db)
+#             if not found_book:
+#                 raise UnauthorizedError
+#             AuthorizationService.check_authorization(requester_id, found_book.user_id)
+#             book = book_service.edit_subject_id(book_data.subject_id, id, db)
+#             book = book_service.to_book_data(book).__dict__
+#             subject = subject_service.find_subject_by_id(book['subject_id'], db)
+#             subject = subject_service.to_subject_data(subject).__dict__
+#             del subject['user_id']
+#             book['subject'] = subject
+#             del book['subject_id']
+#             del book['user_id']
+#             result = {"user_id": requester_id, "book": book}
+#             return JSONResponse(status_code=200, content=result)
+#         except SessionIdNotFoundError as e:
+#             return JSONResponse(status_code=401, content={"message": "Token not found"})
+#         except SessionVerificationError as e:
+#             return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#         except SessionExpiredError as e:
+#             return JSONResponse(status_code=440, content={"message": "Session expired"})
+#         except UnauthorizedError as e:
+#             return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+#         except SubjectNotFoundError as e:
+#             return JSONResponse(status_code=404, content={"message": "Subject not found"})
+#         except BookAlreadyExistsError as e:
+#             return JSONResponse(status_code=409, content={"message": "Book already exists"})
+#         except Exception as e:
+#             return JSONResponse(status_code=409, content={"message": "Book edit failed"})
 
 @router.post("/edit/page/{id}", summary="책 페이지 수정", description="책 페이지를 수정합니다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
@@ -428,7 +442,9 @@ async def edit_subject_id(request: Request, book_data: book_subject_id, id: str)
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
     403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
-    400: {"description": "잘못된 페이지 번호", "content": {"application/json": {"example": {"message": "Page number cannot be negative"}}}},
+    400: {"description": "페이지 번호 음수", "content": {"application/json": {"example": {"message": "Page number cannot be negative"}}}},
+    400: {"description": "페이지 크기 문제", "content": {"application/json": {"example": {"message": "Start page cannot be greater than end page"}}}},
+    400: {"description": "9999 페이지 초과", "content": {"application/json": {"example": {"message": "Page cannot exceed 9999 pages"}}}},
     404: {"description": "책 없음", "content": {"application/json": {"example": {"message": "Book not found"}}}},
     409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
 })
@@ -462,6 +478,8 @@ async def edit_page(request: Request, book_data: book_page, id: str):
             return JSONResponse(status_code=400, content={"message": "Page number cannot be negative"})
         except PageRangeError as e:
             return JSONResponse(status_code=400, content={"message": "Start page cannot be greater than end page"})
+        except ExceedPageError as e:
+            return JSONResponse(status_code=400, content={"message": "Page cannot exceed 9999 pages"})
         except BookNotFoundError as e:
             return JSONResponse(status_code=404, content={"message": "Book not found"})
         except Exception as e:

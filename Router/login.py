@@ -47,7 +47,13 @@ oauth_google = OAuth2Session(
 oauth_naver = OAuth2Session(NAVER_CLIENT_ID, redirect_uri=NAVER_AUTHORIZATION_URI)
 
 @router.post("/login", summary="유저 로그인", description="일반 유저 로그인",responses={
-        200: {"description": "로그인 성공", "content": {"application/json": {"example": {"message": "User logged in successfully"}}}},
+        200: {"description": "로그인 성공", "content": {"application/json": {"example": {
+    "id": "de312a96f417ae185a1eff98f76479545bb9ba2026d363d966d7b53944305665",
+    "userid": "test",
+    "username": "test",
+    "email": "315jmj315@naver.com",
+    "sound_setting": 0
+}}}},
         226: {"description": "이미 로그인 중", "content": {"application/json": {"example": {"message": "Already logged in"}}}},
         404: {"description": "아이디 또는 비밀번호 불일치", "content": {"application/json": {"example": {"message": "ID or password does not match"}}}},
         500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "User login failed"}}}}
@@ -64,9 +70,10 @@ async def login(request: Request, user_data: user_login):
             if not found_user or user_data.password != found_user.password:
                 raise UserNotFoundError
             session_id = AuthorizationService.generate_session(request, found_user.userid, found_user.id)
+            user = user_service.to_user_data(found_user).__dict__
             response = JSONResponse(
                 status_code=200,
-                content={"message": "User logged in successfully"}
+                content=user
             )
             response.set_cookie(key="session_id", value=session_id, httponly=True)
             return response

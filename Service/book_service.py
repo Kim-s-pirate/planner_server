@@ -60,6 +60,14 @@ class book_service:
                 raise BookAlreadyExistsError
             if book.subject_id and db.query(subject).filter(subject.id == book.subject_id).first() is None:
                 raise SubjectNotFoundError
+            if book.start_page < 0:
+                raise NegativePageNumberError
+            if book.end_page < 0:
+                raise NegativePageNumberError
+            if book.start_page > book.end_page:
+                raise PageRangeError
+            if book.start_page > 9999 or book.end_page > 9999:
+                raise ExceedPageError
             db.add(book)
             db.commit()
             db.refresh(book)
@@ -132,6 +140,8 @@ class book_service:
             raise NegativePageNumberError
         if new_start_page > new_end_page:
             raise PageRangeError
+        if new_start_page > 9999 or new_end_page > 9999:
+            raise ExceedPageError
         found_book = book_service.find_book_by_id(id, db)
         if not found_book:
             raise BookNotFoundError

@@ -17,7 +17,11 @@ from Service.error import *
 router = APIRouter(tags=["subject"], prefix="/subject")
 
 @router.post("/create",summary="과목 생성",description="새로운 과목을 생성한다.",responses={
-    201: {"description": "과목 생성 성공", "content": {"application/json": {"example": { "message": "Subject registered successfully"}}}},
+    201: {"description": "과목 생성 성공", "content": {"application/json": {"example": {
+    "id": "18c243a2b6ab92949a63034b9be4bf08452ae22efe62ec2b485f0e9bf58e5513",
+    "title": "math",
+    "color": "#EFAE67"
+}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
@@ -77,7 +81,11 @@ async def check_title_available(request: Request, title: str):
             return JSONResponse(status_code=500, content={"message": "Subject check failed"})
 
 @router.get("/id/{id}",summary="subject id 반환",description="해당 subject의 id를 반환한다.",responses={
-    200: {"description": "subject id 반환 성공", "content": {"application/json": {"example": { "message": "Subject id returned successfully"}}}},
+    200: {"description": "subject id 반환 성공", "content": {"application/json": {"example": {
+    "id": "18c243a2b6ab92949a63034b9be4bf08452ae22efe62ec2b485f0e9bf58e5513",
+    "title": "math",
+    "color": "#EFAE67"
+}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
     403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to view this subject"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
@@ -110,39 +118,53 @@ async def get_subject_by_id(request: Request, id: str):
 
 # 통합 검색 기능으로 리팩토링
 #검색 알고리즘 최적화 필요
-@router.get("/search/{title}",summary="과목 검색 기능",description="과목의 제목, 부분제목, 초성, 과목 등으로 검색 가능한 서비스이다.",responses={
-    200: {"description": "과목 검색 성공", "content": {"application/json": {"example": { "message": "Subject searched successfully"}}}},
-    401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
-    404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
-    440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
-    500: {"description": "과목 검색 실패", "content": {"application/json": {"example": { "message": "Subject search failed"}}}},
-})
-async def get_subject_by_title(request: Request, title: str):
-    with get_db() as db:
-        try:
-            requester_id = AuthorizationService.verify_session(request, db)["id"]
-            found_subject = subject_service.find_subject_by_title(title, requester_id, db)
-            if not found_subject:
-                raise SubjectNotFoundError
-            AuthorizationService.check_authorization(requester_id, found_subject.user_id)
-            found_subject = subject_service.to_subject_data(found_subject).__dict__
-            del found_subject['user_id']
-            result = {"user_id" : requester_id,"subject" : found_subject}
-            return JSONResponse(status_code=200, content=result)
-        except SessionIdNotFoundError as e:
-            return JSONResponse(status_code=401, content={"message": "Token not found"})
-        except SessionVerificationError as e:
-            return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-        except SessionExpiredError as e:
-            return JSONResponse(status_code=440, content={"message": "Session expired"})
-        except SubjectNotFoundError as e:
-            return JSONResponse(status_code=404, content={"message": "Subject not found"})
-        except Exception as e:
-            return JSONResponse(status_code=500, content={"message": "Subject find failed"})
+# @router.get("/search/{title}",summary="과목 검색 기능",description="과목의 제목, 부분제목, 초성, 과목 등으로 검색 가능한 서비스이다.",responses={
+#     200: {"description": "과목 검색 성공", "content": {"application/json": {"example": { "message": "Subject searched successfully"}}}},
+#     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
+#     404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
+#     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
+#     440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
+#     500: {"description": "과목 검색 실패", "content": {"application/json": {"example": { "message": "Subject search failed"}}}},
+# })
+# async def get_subject_by_title(request: Request, title: str):
+#     with get_db() as db:
+#         try:
+#             requester_id = AuthorizationService.verify_session(request, db)["id"]
+#             found_subject = subject_service.find_subject_by_title(title, requester_id, db)
+#             if not found_subject:
+#                 raise SubjectNotFoundError
+#             AuthorizationService.check_authorization(requester_id, found_subject.user_id)
+#             found_subject = subject_service.to_subject_data(found_subject).__dict__
+#             del found_subject['user_id']
+#             result = {"user_id" : requester_id,"subject" : found_subject}
+#             return JSONResponse(status_code=200, content=result)
+#         except SessionIdNotFoundError as e:
+#             return JSONResponse(status_code=401, content={"message": "Token not found"})
+#         except SessionVerificationError as e:
+#             return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+#         except SessionExpiredError as e:
+#             return JSONResponse(status_code=440, content={"message": "Session expired"})
+#         except SubjectNotFoundError as e:
+#             return JSONResponse(status_code=404, content={"message": "Subject not found"})
+#         except Exception as e:
+#             return JSONResponse(status_code=500, content={"message": "Subject find failed"})
 
 @router.get("/subject_list",summary="과목 리스트 반환",description="해당 사용자의 과목 리스트를 반환한다.",responses={
-    200: {"description": "과목 리스트 반환 성공", "content": {"application/json": {"example": { "message": "Subject list returned successfully"}}}},
+    200: {"description": "과목 리스트 반환 성공", "content": {"application/json": {"example": {
+    "user_id": "1b0725841ba6e6e4218e0a991bfaa6914dea00a041d98815724517ca846d8c27",
+    "subject_list": [
+        {
+            "id": "18c243a2b6ab92949a63034b9be4bf08452ae22efe62ec2b485f0e9bf58e5513",
+            "title": "math",
+            "color": "#EFAE67"
+        },
+        {
+            "id": "1a56983b7be69e6737b1cf59fc4fb2fbfa5930a9de8cffb06944818538f2d805",
+            "title": "science",
+            "color": "#858585"
+        }
+    ]
+}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
     404: {"description": "과목 없음", "content": {"application/json": {"example": { "message": "Subject not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
@@ -173,7 +195,7 @@ async def get_subject_list(request: Request):
             return JSONResponse(status_code=500, content={"message": "Subject find failed"})
 
 @router.get("/subject_color/{id}",summary="과목 색상 반환",description="해당 id의 과목의 색상을 반환한다.",responses={
-    200: {"description": "과목 색상 반환 성공", "content": {"application/json": {"example": { "message": "Subject color returned successfully"}}}},
+    200: {"description": "과목 색상 반환 성공", "content": {"application/json": {"example": { "message": "#EFAE67"}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
     403: {"description": "권한 없음", "content": {"application/json": {"example": { "message": "You are not authorized to view this subject"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
@@ -201,7 +223,33 @@ async def get_subject_color(request: Request, id: str):
             return JSONResponse(status_code=500, content={"message": "Color find failed"})
 
 @router.get("/remain_color",summary="사용 가능 색상 반환",description="현재 사용중인 과목 색상을 제외한 사용 가능한 과목 색상을 반환한다.",responses={
-    200: {"description": "사용 가능 색상 반환 성공", "content": {"application/json": {"example": { "message": "Remain color returned successfully"}}}},
+    200: {"description": "사용 가능 색상 반환 성공", "content": {"application/json": {"example": {
+    "user_id": "1b0725841ba6e6e4218e0a991bfaa6914dea00a041d98815724517ca846d8c27",
+    "remain_color": [
+        "#13AF2B",
+        "#BC1FFF",
+        "#FBB8CA",
+        "#FFE209",
+        "#FFF8A7",
+        "#002260",
+        "#8113AF",
+        "#BD611A",
+        "#FF6A9E",
+        "#D2E2FF",
+        "#76A6FF",
+        "#77EB39",
+        "#057917",
+        "#9E1A1A",
+        "#A08E04",
+        "#0307FF",
+        "#000000",
+        "#FFFFFF",
+        "#DA84FF",
+        "#FF0000",
+        "#F67F00",
+        "#1A5022"
+    ]
+}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": { "message": "Token not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": { "message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": { "message": "Session expired"}}}},
