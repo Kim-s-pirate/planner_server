@@ -115,7 +115,6 @@ class calendar_service:
                 goal = calendar_service.to_calendar_goal_db(goal_data, user_id)
                 db.add(goal)
             db.commit()
-            db.refresh(goal)
             return goal
         except Exception as e:
             db.rollback()

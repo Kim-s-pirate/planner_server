@@ -145,7 +145,7 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
             requester_id = AuthorizationService.verify_session(request, db)["id"]
             if goal_data.goal is None:
                 calendar_service.delete_goal(goal_data.year, goal_data.month, requester_id, db)
-            goal = calendar_service.register_goal(goal_data, requester_id, db)
+            goal = calendar_service.register_goal(goal_data, requester_id, db).__dict__
             result = {"user_id": requester_id, "month_schedule": goal}
             return JSONResponse(status_code=201, content=result)
         except SessionIdNotFoundError as e:
