@@ -15,7 +15,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader
-# from Service.limiter import limiter
+from Service.limiter import limiter
 template_dir = os.path.join(os.path.dirname(__file__), "../Resource")
 env = Environment(loader=FileSystemLoader(template_dir))
 router = APIRouter(tags=["email"], prefix="/email")
@@ -44,7 +44,7 @@ async def send_email_background_task(message: str):
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Email sent successfully!"}}}},
     500: {"description": "이메일 전송 실패", "content": {"application/json": {"example": {"message": "There was some error while sending the email"}}}}
 })
-# @limiter.limit("3/1minutes")
+@limiter.limit("3/1minutes")
 async def send_email(request: Request, email: email_request, background_tasks: BackgroundTasks):
     with get_db() as db:
         try:
