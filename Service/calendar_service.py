@@ -108,15 +108,16 @@ class calendar_service:
 
     def register_goal(goal_data: calendar_goal_register, user_id: str, db):
         try:
-            existing_goal = calendar_service.find_goal(goal_data.year, goal_data.month, user_id, db)
-            if existing_goal:
-                existing_goal.goal = goal_data.goal
+            goal_data = calendar_service.find_goal(goal_data.year, goal_data.month, user_id, db)
+            if goal_data:
+                goal_data.goal = goal_data.goal
             else:
-                new_goal = calendar_service.to_calendar_goal_db(goal_data, user_id)
-                db.add(new_goal)
+                goal_data = calendar_service.to_calendar_goal_db(goal_data, user_id)
+                db.add(goal_data)
             db.commit()
+            db.refresh(goal_data)
+            return goal_data
         except Exception as e:
-            db.rollback()
             raise e
 
     def delete_goal(year: int, month: int, user_id: str, db):
@@ -128,6 +129,5 @@ class calendar_service:
             ).delete()
             db.commit()
         except Exception as e:
-            db.rollback()
             raise e
 

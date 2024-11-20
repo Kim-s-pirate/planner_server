@@ -80,7 +80,8 @@ async def get_day_schedule(request: Request, date: date):
             schedule = calendar_service.to_schedule_data(schedule)
             schedule = calendar_service.schedule_to_dict(schedule)
             del schedule['user_id']
-            return JSONResponse(status_code=200, content={"message": schedule})
+            result = {"user_id": requester_id, "schedule": schedule}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -114,7 +115,8 @@ async def get_month_schedule(request: Request, year: str, month: str):
             schedules = [calendar_service.schedule_to_dict(schedule) for schedule in schedules]
             for schedule in schedules:
                 del schedule['user_id']
-            return JSONResponse(status_code=200, content={"message": schedules})
+            result = {"user_id": requester_id, "month_schedule": schedules}
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -140,12 +142,15 @@ async def get_month_schedule(request: Request, year: str, month: str):
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     with get_db() as db:
         try:
-            session = AuthorizationService.verify_session(request, db)
-            user_id = session['id']
+            requester_id = AuthorizationService.verify_session(request, db)["id"]
             if goal_data.goal is None:
-                calendar_service.delete_goal(goal_data.year, goal_data.month, user_id, db)
-            calendar_service.register_goal(goal_data, user_id, db)
-            return JSONResponse(status_code=201, content={"message": "Goal registered successfully"})
+                goal = calendar_service.delete_goal(goal_data.year, goal_data.month, requester_id, db)
+            else:
+                goal = calendar_service.register_goal(goal_data, requester_id, db)
+            goal = calendar_service.to_calendar_goal_data(goal).__dict__
+            del goal["user_id"]
+            result = {"user_id": requester_id, "month_schedule": goal}
+            return JSONResponse(status_code=201, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -185,8 +190,9 @@ async def get_calendar(request: Request, year: int, month: int):
                 goal = calendar_service.to_calendar_goal_data(goal).dict()
                 del goal['user_id']
                 data['goal'] = goal
+            result = {"user_id": user_id, "calendar": data}
 
-            return JSONResponse(status_code=200, content=data)
+            return JSONResponse(status_code=200, content=result)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
