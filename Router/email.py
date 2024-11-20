@@ -34,7 +34,7 @@ gmail_password = password
 subject = 'Test Email'
 body = 'This is a test email sent using yagmail.'
 
-async def send_email(message: str):
+async def send_email_background_task(message: str):
     send(
         message,
         hostname=SMTP_SERVER,
@@ -60,9 +60,9 @@ async def send_email(request: Request, email: email_request, background_tasks: B
             template = env.get_template("email_verification_form.html")
             body = template.render(verification_code=verification_code)
             message.attach(MIMEText(body, "html"))
-            background_tasks.add_task(send_email, message)
+            background_tasks.add_task(send_email_background_task, message)
             email_service.register_verification(email, verification_code, db)
-            return {"message": "Email sent successfully!"}
+            return JSONResponse(status_code=200, content={"message": "Email sent successfully!"})
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "There was some error while sending the email"})
 
