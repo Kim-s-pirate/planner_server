@@ -409,47 +409,47 @@ async def edit_title(request: Request, book_data: book_title, id: str):
         except Exception as e:
             return JSONResponse(status_code=409, content={"message": "Book edit failed"})
 
-# @router.post("/edit/subject/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
-#     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
-#     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-#     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
-#     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
-#     403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
-#     404: {"description": "과목 없음", "content": {"application/json": {"example": {"message": "Subject not found"}}}},
-#     409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
-# })
-# async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
-#     with get_db() as db:
-#         try:
-#             requester_id = AuthorizationService.verify_session(request, db)["id"]
-#             found_book = book_service.find_book_by_id(id, db)
-#             if not found_book:
-#                 raise UnauthorizedError
-#             AuthorizationService.check_authorization(requester_id, found_book.user_id)
-#             book = book_service.edit_subject_id(book_data.subject_id, id, db)
-#             book = book_service.to_book_data(book).__dict__
-#             subject = subject_service.find_subject_by_id(book['subject_id'], db)
-#             subject = subject_service.to_subject_data(subject).__dict__
-#             del subject['user_id']
-#             book['subject'] = subject
-#             del book['subject_id']
-#             del book['user_id']
-#             result = {"user_id": requester_id, "book": book}
-#             return JSONResponse(status_code=200, content=result)
-#         except SessionIdNotFoundError as e:
-#             return JSONResponse(status_code=401, content={"message": "Token not found"})
-#         except SessionVerificationError as e:
-#             return JSONResponse(status_code=417, content={"message": "Token verification failed"})
-#         except SessionExpiredError as e:
-#             return JSONResponse(status_code=440, content={"message": "Session expired"})
-#         except UnauthorizedError as e:
-#             return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
-#         except SubjectNotFoundError as e:
-#             return JSONResponse(status_code=404, content={"message": "Subject not found"})
-#         except BookAlreadyExistsError as e:
-#             return JSONResponse(status_code=409, content={"message": "Book already exists"})
-#         except Exception as e:
-#             return JSONResponse(status_code=409, content={"message": "Book edit failed"})
+@router.post("/edit/subject/{id}", summary="책 과목 수정", description="책 과목을 수정합니다.", responses={
+    200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
+    401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
+    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
+    403: {"description": "수정 권한 없음", "content": {"application/json": {"example": {"message": "You are not authorized to edit this book"}}}},
+    404: {"description": "과목 없음", "content": {"application/json": {"example": {"message": "Subject not found"}}}},
+    409: {"description": "수정 실패", "content": {"application/json": {"example": {"message": "Book edit failed"}}}}
+})
+async def edit_subject_id(request: Request, book_data: book_subject_id, id: str):
+    with get_db() as db:
+        try:
+            requester_id = AuthorizationService.verify_session(request, db)["id"]
+            found_book = book_service.find_book_by_id(id, db)
+            if not found_book:
+                raise UnauthorizedError
+            AuthorizationService.check_authorization(requester_id, found_book.user_id)
+            book = book_service.edit_subject_id(book_data.subject_id, id, db)
+            book = book_service.to_book_data(book).__dict__
+            subject = subject_service.find_subject_by_id(book['subject_id'], db)
+            subject = subject_service.to_subject_data(subject).__dict__
+            del subject['user_id']
+            book['subject'] = subject
+            del book['subject_id']
+            del book['user_id']
+            result = {"user_id": requester_id, "book": book}
+            return JSONResponse(status_code=200, content=result)
+        except SessionIdNotFoundError as e:
+            return JSONResponse(status_code=401, content={"message": "Token not found"})
+        except SessionVerificationError as e:
+            return JSONResponse(status_code=417, content={"message": "Token verification failed"})
+        except SessionExpiredError as e:
+            return JSONResponse(status_code=440, content={"message": "Session expired"})
+        except UnauthorizedError as e:
+            return JSONResponse(status_code=403, content={"message": "You are not authorized to edit this book"})
+        except SubjectNotFoundError as e:
+            return JSONResponse(status_code=404, content={"message": "Subject not found"})
+        except BookAlreadyExistsError as e:
+            return JSONResponse(status_code=409, content={"message": "Book already exists"})
+        except Exception as e:
+            return JSONResponse(status_code=409, content={"message": "Book edit failed"})
 
 @router.post("/edit/page/{id}", summary="책 페이지 수정", description="책 페이지를 수정합니다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Book edited successfully"}}}},
