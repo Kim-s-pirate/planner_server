@@ -17,12 +17,28 @@ from dotenv import load_dotenv
 
 router = APIRouter(tags=["calendar"], prefix="/calendar")
 
+
 @router.post("/create", summary="캘린더 생성", description="캘린더를 생성한다.", responses={
-    201: {"description": "성공", "content": {"application/json": {"example": {"message": "Schedule registered successfully"}}}},
+    201: {"description": "성공", "content": {"application/json": {"example": {
+        "user_id": "1b0725841ba6e6e4218e0a991bfaa6914dea00a041d98815724517ca846d8c27",
+        "date": "2024-08-20",
+        "task_list": [
+            {
+                "title": "task 1",
+                "memo": "this is task 1"
+            },
+            {
+                "title": "task 2",
+                "memo": "this is task 2"
+            }
+        ]
+    }}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    417: {"description": "토큰 검증 실패",
+          "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
-    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Schedule registration failed"}}}}
+    500: {"description": "서버 에러",
+          "content": {"application/json": {"example": {"message": "Schedule registration failed"}}}}
 })
 async def schedule_create(request: Request, schedule_data: day_schedule_register):
     with get_db() as db:
@@ -30,10 +46,11 @@ async def schedule_create(request: Request, schedule_data: day_schedule_register
             requester_id = AuthorizationService.verify_session(request, db)["id"]
             if schedule_data.task_list is None:
                 calendar_service.delete_schedule_by_date(schedule_data.date, requester_id, db)
-            else:
-                schedule_data = calendar_service.to_schedule_db(schedule_data, requester_id)
-                calendar_service.create_schedule(schedule_data, db)
-            return JSONResponse(status_code=201, content={"message": "Schedule registered successfully"})
+            schedule_data = calendar_service.to_schedule_db(schedule_data, requester_id)
+            schedule = calendar_service.create_schedule(schedule_data, db)
+            schedule = calendar_service.to_schedule_data(schedule)
+            schedule = calendar_service.schedule_to_dict(schedule)
+            return JSONResponse(status_code=201, content=schedule)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:
@@ -43,10 +60,12 @@ async def schedule_create(request: Request, schedule_data: day_schedule_register
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "Schedule registration failed"})
 
+
 @router.get("/day_schedule/{date}", summary="하루 스케쥴 반환", description="주어진 date의 스케쥴을 반환한다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Schedule data"}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    417: {"description": "토큰 검증 실패",
+          "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
     404: {"description": "스케줄 없음", "content": {"application/json": {"example": {"message": "Schedule not found"}}}},
     500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Schedule find failed"}}}}
@@ -73,11 +92,13 @@ async def get_day_schedule(request: Request, date: date):
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "Schedule find failed"})
 
-#month_schedule에는 일정과 월간, 주간 목표를 같이 보내줘야함
+
+# month_schedule에는 일정과 월간, 주간 목표를 같이 보내줘야함
 @router.get("/month_schedule", summary="달 스케쥴 반환", description="주어진 달의 스케쥴을 반환한다.", responses={
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Monthly schedule data"}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    417: {"description": "토큰 검증 실패",
+          "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
     404: {"description": "스케줄 없음", "content": {"application/json": {"example": {"message": "Schedule not found"}}}},
     500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "Schedule find failed"}}}}
@@ -105,12 +126,16 @@ async def get_month_schedule(request: Request, year: str, month: str):
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "Schedule find failed"})
 
+
 @router.post("/register/goal", summary="목표 생성", description="캘린더의 목표를 생성한다.", responses={
-    201: {"description": "성공", "content": {"application/json": {"example": {"message": "Goal registered successfully"}}}},
+    201: {"description": "성공",
+          "content": {"application/json": {"example": {"message": "Goal registered successfully"}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    417: {"description": "토큰 검증 실패",
+          "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
-    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while registering the goal"}}}}
+    500: {"description": "서버 에러",
+          "content": {"application/json": {"example": {"message": "There was some error while registering the goal"}}}}
 })
 async def register_calendar_goal(request: Request, goal_data: calendar_goal_register):
     with get_db() as db:
@@ -119,8 +144,7 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
             user_id = session['id']
             if goal_data.goal is None:
                 calendar_service.delete_goal(goal_data.year, goal_data.month, user_id, db)
-            else:
-                calendar_service.register_goal(goal_data, user_id, db)
+            calendar_service.register_goal(goal_data, user_id, db)
             return JSONResponse(status_code=201, content={"message": "Goal registered successfully"})
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -131,12 +155,17 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "There was some error while registering the goal"})
 
+
 @router.get("/calendar", summary="캘린더 반환", description="해당하는 달의 캘린더를 반환한다.", responses={
-    200: {"description": "성공", "content": {"application/json": {"example": {"schedule": [{"id": "1", "name": "Sample Schedule"}], "goal": {"id": "1", "name": "Sample Goal"}}}}},
+    200: {"description": "성공", "content": {"application/json": {
+        "example": {"schedule": [{"id": "1", "name": "Sample Schedule"}],
+                    "goal": {"id": "1", "name": "Sample Goal"}}}}},
     401: {"description": "토큰 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
-    417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
+    417: {"description": "토큰 검증 실패",
+          "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},
-    500: {"description": "서버 에러", "content": {"application/json": {"example": {"message": "There was some error while getting the calendar"}}}}
+    500: {"description": "서버 에러",
+          "content": {"application/json": {"example": {"message": "There was some error while getting the calendar"}}}}
 })
 async def get_calendar(request: Request, year: int, month: int):
     with get_db() as db:
@@ -156,7 +185,7 @@ async def get_calendar(request: Request, year: int, month: int):
                 goal = calendar_service.to_calendar_goal_data(goal).dict()
                 del goal['user_id']
                 data['goal'] = goal
-            
+
             return JSONResponse(status_code=200, content=data)
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
@@ -166,8 +195,6 @@ async def get_calendar(request: Request, year: int, month: int):
             return JSONResponse(status_code=440, content={"message": "Session expired"})
         except Exception as e:
             return JSONResponse(status_code=500, content={"message": "There was some error while getting the calendar"})
-
-
 
 # @router.delete("/delete/day_schedule/{date}")
 # async def delete_schedule(request: Request, date: date):

@@ -14,7 +14,22 @@ from collections import defaultdict
 router = APIRouter(tags=["book"], prefix="/book")
 
 @router.post("/register", summary="책 등록", description="책을 등록합니다.", responses={
-    201: {"description": "성공", "content": {"application/json": {"example": {"message": "Book registered successfully"}}}},
+    201: {"description": "성공", "content": {"application/json": {"example": {
+    "id": "65d4701c9ab37db862c9d396c3020c9793d1110e73585c208987f89cacc67267",
+    "user_id": "1b0725841ba6e6e4218e0a991bfaa6914dea00a041d98815724517ca846d8c27",
+    "title": "test2",
+    "start_page": 1,
+    "end_page": 200,
+    "memo": "",
+    "status": True,
+    "initial": "test2",
+    "subject": {
+        "id": "1a56983b7be69e6737b1cf59fc4fb2fbfa5930a9de8cffb06944818538f2d805",
+        "user_id": "1b0725841ba6e6e4218e0a991bfaa6914dea00a041d98815724517ca846d8c27",
+        "title": "science",
+        "color": "#858585"
+    }
+}}}},
     401: {"description": "토큰이 없음", "content": {"application/json": {"example": {"message": "Token not found"}}}},
     417: {"description": "토큰 검증 실패", "content": {"application/json": {"example": {"message": "Token verification failed"}}}},
     440: {"description": "세션 만료", "content": {"application/json": {"example": {"message": "Session expired"}}}},

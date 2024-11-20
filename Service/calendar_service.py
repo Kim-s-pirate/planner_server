@@ -40,6 +40,8 @@ class calendar_service:
             calendar_service.delete_schedule_by_date(schedule.date, schedule.user_id, db)
             db.add(schedule)
             db.commit()
+            db.refresh(schedule)
+            return schedule
         except Exception as e:
             raise e
 
@@ -128,3 +130,4 @@ class calendar_service:
         except Exception as e:
             db.rollback()
             raise e
+
