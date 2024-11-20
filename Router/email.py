@@ -15,14 +15,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+# from Service.limiter import limiter
 template_dir = os.path.join(os.path.dirname(__file__), "../Resource")
 env = Environment(loader=FileSystemLoader(template_dir))
 router = APIRouter(tags=["email"], prefix="/email")
-limiter = Limiter(key_func=get_remote_address)
-router.state.limiter = limiter
-router.add_exception_handler(429, _rate_limit_exceeded_handler)
 load_dotenv(".env")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -34,12 +30,8 @@ password = os.getenv("password")
 gmail_user = email
 gmail_password = password
 
-# 수신자 이메일과 메시지 내용
-subject = 'Test Email'
-body = 'This is a test email sent using yagmail.'
-
 async def send_email_background_task(message: str):
-    send(
+    await send(
         message,
         hostname=SMTP_SERVER,
         port=SMTP_PORT,
@@ -52,7 +44,7 @@ async def send_email_background_task(message: str):
     200: {"description": "성공", "content": {"application/json": {"example": {"message": "Email sent successfully!"}}}},
     500: {"description": "이메일 전송 실패", "content": {"application/json": {"example": {"message": "There was some error while sending the email"}}}}
 })
-@limiter.limit("3/1minutes")
+# @limiter.limit("3/1minutes")
 async def send_email(request: Request, email: email_request, background_tasks: BackgroundTasks):
     with get_db() as db:
         try:

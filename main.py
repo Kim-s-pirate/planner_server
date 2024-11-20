@@ -17,6 +17,8 @@ from Service.email_service import email_service
 import threading
 import schedule
 import atexit
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from Service.limiter import limiter
 
 load_dotenv(".env")
 secret = os.getenv("secret")
@@ -51,6 +53,8 @@ app = FastAPI(
     },
     **SWAGGER_HEADERS
 )
+app.state.limiter = limiter
+app.add_exception_handler(429, _rate_limit_exceeded_handler)
 
 
 app.add_middleware(
