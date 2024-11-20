@@ -161,7 +161,7 @@ async def register_calendar_goal(request: Request, goal_data: calendar_goal_regi
             return JSONResponse(status_code=500, content={"message": "There was some error while registering the goal"})
 
 
-@router.get("/calendar", summary="캘린더 반환", description="해당하는 달의 캘린더를 반환한다.", responses={
+@router.get("/get_calendar", summary="캘린더 반환", description="해당하는 달의 캘린더를 반환한다.", responses={
     200: {"description": "성공", "content": {"application/json": {
         "example": {"schedule": [{"id": "1", "name": "Sample Schedule"}],
                     "goal": {"id": "1", "name": "Sample Goal"}}}}},
