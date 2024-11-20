@@ -86,14 +86,14 @@ async def get_month_schedule(request: Request, year: str, month: str):
     with get_db() as db:
         try:
             requester_id = AuthorizationService.verify_session(request, db)["id"]
-            schedule = calendar_service.find_schedule_by_month(year, month, requester_id, db)
-            if not schedule:
+            schedules = calendar_service.find_schedule_by_month(year, month, requester_id, db)
+            if not schedules:
                 raise ScheduleNotFoundError
-            schedule = [calendar_service.to_schedule_data(s) for s in schedule]
-            schedule = [calendar_service.schedule_to_dict(s) for s in schedule]
-            for s in schedule:
-                del s['user_id']
-            return JSONResponse(status_code=200, content={"message": schedule})
+            schedules = [calendar_service.to_schedule_data(schedule) for schedule in schedules]
+            schedules = [calendar_service.schedule_to_dict(schedule) for schedule in schedules]
+            for schedule in schedules:
+                del schedule['user_id']
+            return JSONResponse(status_code=200, content={"message": schedules})
         except SessionIdNotFoundError as e:
             return JSONResponse(status_code=401, content={"message": "Token not found"})
         except SessionVerificationError as e:

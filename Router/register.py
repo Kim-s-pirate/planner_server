@@ -17,7 +17,13 @@ from Data.oauth import *
 router = APIRouter(tags=["account"], prefix="/account")
 
 @router.post("/register",summary="회원가입",description="회원정보와 state를 통해 회원가입한다.",responses={
-    201: {"description": "회원가입 성공", "content": {"application/json": {"example": {"message": "User registered successfully"}}}},
+    201: {"description": "회원가입 성공", "content": {"application/json": {"example": {
+    "id": "de312a96f417ae185a1eff98f76479545bb9ba2026d363d966d7b53944305665",
+    "userid": "test",
+    "username": "test",
+    "email": "315jmj315@naver.com",
+    "sound_setting": 0
+}}}},
     400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Email cannot be blank"}}}},
     400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Email cannot contain spaces"}}}},
     400: {"description": "회원가입 실패", "content": {"application/json": {"example": {"message": "Userid cannot be blank"}}}},
@@ -50,8 +56,9 @@ async def register(user_data: user_register):
                 raise EmailMismatchError
             user_service.register_form_validation(user_data)
             user_data = user_service.to_user_db(user_data)
-            user_service.create_user(user_data, db)
-            return JSONResponse(status_code=201, content={"message": "User registered successfully"})
+            user = user_service.create_user(user_data, db)
+            user = user_service.to_user_data(user).__dict__
+            return JSONResponse(status_code=201, content=user)
         except EmptyEmailError as e:
             return JSONResponse(status_code=400, content={"message": "Email cannot be blank"})
         except InvalidEmailError as e:

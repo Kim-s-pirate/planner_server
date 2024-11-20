@@ -4,6 +4,7 @@ from Data.achievement import *
 from Database.database import db
 from Service.book_service import *
 from Service.error import *
+from datetime import date
 import json
 
 
@@ -24,6 +25,7 @@ class achievement_service:
 
     # 해당하는 기간 중 특정 책에 대한 성취도 반환
     def get_book_progress_by_period(start_date: date, end_date: date, book_id: str, db):
+        achievement_service.date_verification(start_date, end_date)
         results = db.query(result).filter(result.date >= start_date, result.date <= end_date,
                                           result.book_id == book_id).all()
         unique_pages = set()
@@ -38,6 +40,7 @@ class achievement_service:
 
     # 해당하는 기간 중 각 책에 대한 성취도 반환
     def get_progress_by_period(start_date: date, end_date: date, user_id: str, db):
+        achievement_service.date_verification(start_date, end_date)
         results = db.query(result).filter(result.date >= start_date, result.date <= end_date,
                                           result.user_id == user_id).all()
         progress_by_book = {}
@@ -56,6 +59,7 @@ class achievement_service:
 
     # 날짜 하나와 책 id 받아서 그 날짜 이전까지의 전체 진도율 보여주는 코드.
     def get_book_progress_before_date(last_date: date, book_id: str, db):
+        achievement_service.date_verification(last_date, last_date)
         results = db.query(result).filter(result.date <= last_date, result.book_id == book_id).all()
         unique_pages = set()
         for res in results:
@@ -69,6 +73,7 @@ class achievement_service:
 
     # 날짜 하나 받아서 그 날짜 이전까지의 전체 진도율 보여주는 코드.
     def get_progress_before_date(last_date: date, user_id: str, db):
+        achievement_service.date_verification(last_date, last_date)
         results = db.query(result).filter(result.date <= last_date, result.user_id == user_id).all()
         progress_by_book = {}
         for res in results:
@@ -85,6 +90,7 @@ class achievement_service:
         return book_progress
 
     def get_all_progress(start_date: date, end_date: date, user_id: str, db):
+        achievement_service.date_verification(start_date, end_date)
         results_between = db.query(result).filter(
             result.date >= start_date,
             result.date <= end_date,
@@ -135,3 +141,8 @@ class achievement_service:
             "progress_before": book_progress_before,
             "progress_between": book_progress_between
         }
+
+    def date_verification(start_date: date, end_date: date):
+        today = date.today()
+        if start_date > end_date or start_date > today or end_date > today:
+            raise InvalidDateError

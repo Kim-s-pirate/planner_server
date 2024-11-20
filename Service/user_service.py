@@ -37,6 +37,8 @@ class user_service:
                 raise UserAlreadyExistsError
             db.add(user)
             db.commit()
+            db.refresh(user)
+            return user
         except Exception as e:
             raise e
 
