@@ -76,6 +76,7 @@ async def login(request: Request, user_data: user_login):
                 content=user
             )
             response.set_cookie(key="session_id", value=session_id, httponly=True)
+            print(session_id)
             return response
         except DuplicateLoginError as e:
             return JSONResponse(status_code=226, content={"message": "Already logged in"})
@@ -93,6 +94,8 @@ async def login(request: Request, user_data: user_login):
 async def logout(request: Request):
     with get_db() as db:
         try:
+            # print(request.headers)
+            print(request.cookies)
             AuthorizationService.verify_session(request, db)
             AuthorizationService.delete_session(request)
             return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
