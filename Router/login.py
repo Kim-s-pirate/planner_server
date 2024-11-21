@@ -94,8 +94,6 @@ async def login(request: Request, user_data: user_login):
 async def logout(request: Request):
     with get_db() as db:
         try:
-            # print(request.headers)
-            print(request.cookies)
             AuthorizationService.verify_session(request, db)
             AuthorizationService.delete_session(request)
             return JSONResponse(status_code=200, content={"message": "User logged out successfully"})
