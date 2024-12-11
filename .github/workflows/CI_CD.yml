@@ -19,4 +19,14 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh -i private_key -o StrictHostKeyChecking=no ubuntu@ec2-3-38-113-63.ap-northeast-2.compute.amazonaws.com 'cd ~/planner_server && git stash save "Auto-stash before deployment" && git pull && sudo lsof -t -i :1500 | grep -q . && sudo lsof -t -i :1500 | xargs sudo kill -9 && screen -S server -X stuff "cd ~/planner_server\n" && screen -S server -X stuff "python3 main.py\n"'
+          ssh -i private_key -o StrictHostKeyChecking=no ubuntu@ec2-3-38-113-63.ap-northeast-2.compute.amazonaws.com << 'EOF'
+          cd ~/planner_server
+          git stash save "Auto-stash before deployment"
+          git pull
+
+          pid=$(sudo lsof -t -i :1500)
+          if [ -n "$pid" ]; then
+            sudo kill -9 $pid
+          fi
+          screen -S server -X stuff "~/planner_server && python3 main.py\n"
+          EOF
