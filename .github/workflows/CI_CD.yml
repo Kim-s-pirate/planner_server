@@ -28,5 +28,5 @@ jobs:
           if [ -n "$pid" ]; then
             sudo kill -9 $pid
           fi
-          screen -S server -X stuff "~/planner_server && python3 main.py\n"
+          screen -S server -X stuff "cd ~/planner_server && python3 main.py\n"
           EOF
